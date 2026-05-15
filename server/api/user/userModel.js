@@ -1,40 +1,45 @@
 const mongoose = require("mongoose");
 
-const User = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    fullname: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    email: {
+    firebase_uid: {
       type: String,
       required: true,
       unique: true,
-      trim: true,
     },
-    password: {
+    name: {
       type: String,
-      required: true,
+      lowercase: true,
       trim: true,
+      default: "",
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      unique: true,
+      trim: true,
+      default: "",
     },
     phone: {
       type: String,
-      required: true,
       trim: true,
+      unique: true,
+      default: "",
     },
-    role: {
-      type: "ADMIN" | "BUSINESS-OWNER" | "USER",
-      default: "USER",
-      required: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    profileImg: {
+    profile_image: {
       type: String,
       required: true,
+      default: "",
+    },
+    role: {
+      type: String,
+      enum: ["user", "businessOwner", "admin"],
+      default: "user",
+      required: true,
+    },
+    is_blocked: {
+      type: Boolean,
+      default: false,
     },
   },
   {
@@ -42,6 +47,6 @@ const User = new mongoose.Schema(
   },
 );
 
-const User = mongoose.model("User", User);
+const User = mongoose.model("User", UserSchema);
 
 module.exports = User;

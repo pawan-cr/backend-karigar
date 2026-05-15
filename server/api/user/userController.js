@@ -13,7 +13,7 @@ const User = async (req, res) => {
         })
     }
     if (req.file) {
-      profileImg = req.file.path;
+      profile_image = req.file.path;
     }
 
     const hashedPassword = bcrypt.hash(password, 10);
