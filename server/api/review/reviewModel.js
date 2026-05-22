@@ -21,6 +21,7 @@ const reviewSchema = new mongoose.Schema(
     comment: {
       type: String,
       required: true,
+      trim: true,
     },
     images: [{ type: String }],
     helpful_count: {
@@ -34,11 +35,18 @@ const reviewSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      default: "approved",
+    },
+    owner_reply: {
+      message: String,
+      replied_at: Date,
     },
   },
   { timestamps: true },
 );
+
+reviewSchema.index({ business_id: 1, user_id: 1 }, { unique: true });
+reviewSchema.index({ business_id: 1 });
 
 const reviewVoteSchema = new mongoose.Schema(
   {
@@ -56,10 +64,13 @@ const reviewVoteSchema = new mongoose.Schema(
       type: String,
       enum: ["helpful", "unhelpful"],
       default: "helpful",
+      required: true,
     },
   },
   { timestamps: true },
 );
+
+reviewVoteSchema.index({ review_id: 1, user_id: 1 }, { unique: true });
 
 const Review = mongoose.model("Review", reviewSchema);
 const ReviewVote = mongoose.model("ReviewVote", reviewVoteSchema);

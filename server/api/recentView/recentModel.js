@@ -21,5 +21,7 @@ const recentViewSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+recentViewSchema.index({ user_id: 1, business_id: 1 }, { unique: true });
+
 const RecentView = mongoose.model("RecentView", recentViewSchema);
 module.exports = RecentView;
