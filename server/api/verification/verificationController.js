@@ -1,6 +1,7 @@
 const Business = require("../business/businessModel");
 const Verification = require("./verificationModel");
 const mongoose = require("mongoose");
+const { createUserNotification } = require("../../utils/notify");
 
 const isValidBusinessId = (businessId) =>
   mongoose.Types.ObjectId.isValid(businessId);
@@ -15,10 +16,7 @@ const getVerificationBusinesses = async (req, res) => {
       search,
       page = 1,
       limit = 20,
-    } = {
-      ...req.query,
-      ...req.body,
-    };
+    } = req.body;
 
     const verificationStatus = status.toString().toLowerCase();
     if (!VERIFICATION_STATUSES.includes(verificationStatus)) {
@@ -33,16 +31,14 @@ const getVerificationBusinesses = async (req, res) => {
     }
 
     if (city) filter.city = new RegExp(city, "i");
-    if (category && !mongoose.Types.ObjectId.isValid(category)) {
-      return res.status(400).json({ message: "Invalid category id" });
-    }
     if (category) {
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        return res.status(400).json({ message: "Invalid category id" });
+      }
       filter.category = category;
     }
     if (search) {
-      filter.$text = {
-        $search: search,
-      };
+      filter.$text = { $search: search };
     }
 
     const businesses = await Business.find(filter)
@@ -72,13 +68,13 @@ const getVerificationBusinesses = async (req, res) => {
 
 const approveBusiness = async (req, res) => {
   try {
-    const { businessId } = req.params;
+    const { businessId } = req.body;
 
     if (!isValidBusinessId(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
     }
 
-    let business = await Business.findById(businessId);
+    const business = await Business.findById(businessId);
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
@@ -100,6 +96,13 @@ const approveBusiness = async (req, res) => {
       action: "approved",
     });
 
+    await createUserNotification(
+      business.owner_id,
+      "Business verified",
+      `${business.name} has been verified and is now live.`,
+      "verification_approved",
+    );
+
     return res.status(200).json({
       message: "Business approved successfully",
       business,
@@ -111,8 +114,7 @@ const approveBusiness = async (req, res) => {
 
 const rejectBusiness = async (req, res) => {
   try {
-    const { businessId } = req.params;
-    const { reason } = req.body;
+    const { businessId, reason } = req.body;
 
     if (!isValidBusinessId(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -122,7 +124,7 @@ const rejectBusiness = async (req, res) => {
       return res.status(400).json({ message: "Rejection reason is required" });
     }
 
-    let business = await Business.findById(businessId);
+    const business = await Business.findById(businessId);
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
@@ -144,6 +146,13 @@ const rejectBusiness = async (req, res) => {
       reason,
     });
 
+    await createUserNotification(
+      business.owner_id,
+      "Business rejected",
+      `${business.name} was rejected: ${reason}`,
+      "verification_rejected",
+    );
+
     return res.status(200).json({
       message: "Business rejected successfully",
       business,
@@ -155,7 +164,7 @@ const rejectBusiness = async (req, res) => {
 
 const getVerificationHistory = async (req, res) => {
   try {
-    const { businessId } = req.params;
+    const { businessId } = req.body;
 
     if (!isValidBusinessId(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
