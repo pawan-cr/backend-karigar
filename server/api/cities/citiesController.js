@@ -1,4 +1,5 @@
 const City = require("./citiesModel");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 // API to create City
 const createCity = async (req, res) => {
@@ -18,6 +19,13 @@ const createCity = async (req, res) => {
     const city = await City.create({
       name,
       state,
+    });
+    await logAdminActivity(req, {
+      action: "create_city",
+      resource: "city",
+      resource_id: city._id,
+      resource_model: "City",
+      details: { name, state },
     });
     return res.status(201).json({
       message: "City Created",
@@ -128,6 +136,14 @@ const updateCity = async (req, res) => {
       },
     );
 
+    await logAdminActivity(req, {
+      action: "update_city",
+      resource: "city",
+      resource_id: city._id,
+      resource_model: "City",
+      details: { id, name, state, status },
+    });
+
     return res.status(200).json({
       message: "City Updated",
       city,
@@ -152,6 +168,13 @@ const deleteCity = async (req, res) => {
     const city = await City.findById(id);
     city.status = "inactive";
     await city.save();
+    await logAdminActivity(req, {
+      action: "delete_city",
+      resource: "city",
+      resource_id: city._id,
+      resource_model: "City",
+      details: { id },
+    });
 
     return res.status(200).json({
       message: "City Deleted(soft)",

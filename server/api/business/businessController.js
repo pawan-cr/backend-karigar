@@ -2,6 +2,13 @@ const mongoose = require("mongoose");
 const Business = require("./businessModel");
 const Verification = require("../verification/verificationModel");
 const Analytics = require("../businessAnalytics/analyticsModel");
+const RecentView = require("../recentView/recentModel");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
+const {
+  isBusinessOpenNow,
+  haversineKm,
+  resolveCityFilter,
+} = require("../../utils/businessFilters");
 
 const createSlug = (value) =>
   value
@@ -24,7 +31,58 @@ const buildUniqueSlug = async (name, requestedSlug) => {
   return slug;
 };
 
-// Business Owner
+const baseVerifiedFilter = () => ({
+  verified_status: "verified",
+  is_active: true,
+});
+
+const applyPostListFilters = (businesses, options) => {
+  let result = [...businesses];
+  const { min_rating, open_now, lat, lng, max_km } = options;
+
+  if (min_rating !== undefined && min_rating !== null && min_rating !== "") {
+    result = result.filter((b) => b.rating >= Number(min_rating));
+  }
+
+  if (open_now === true || open_now === "true") {
+    result = result.filter((b) => isBusinessOpenNow(b.timing));
+  }
+
+  if (lat !== undefined && lng !== undefined && max_km !== undefined) {
+    const userLat = Number(lat);
+    const userLng = Number(lng);
+    const maxDistance = Number(max_km);
+    result = result
+      .map((b) => {
+        const coords = b.coordinates;
+        if (!coords?.latitude || !coords?.longitude) {
+          return { business: b, distance_km: null };
+        }
+        const distance_km = haversineKm(
+          userLat,
+          userLng,
+          coords.latitude,
+          coords.longitude,
+        );
+        return { business: b, distance_km };
+      })
+      .filter(
+        (item) => item.distance_km !== null && item.distance_km <= maxDistance,
+      )
+      .sort((a, b) => a.distance_km - b.distance_km)
+      .map((item) => {
+        const doc = item.business.toObject
+          ? item.business.toObject()
+          : item.business;
+        doc.distance_km = Number(item.distance_km.toFixed(2));
+        return doc;
+      });
+    return result;
+  }
+
+  return result;
+};
+
 const registerBusiness = async (req, res) => {
   try {
     const {
@@ -49,20 +107,18 @@ const registerBusiness = async (req, res) => {
       images,
     } = req.body;
 
-    if (
-      !name ||
-      !category ||
-      !sub_category ||
-      !description ||
-      !phone ||
-      !images ||
-      !Array.isArray(images) ||
-      images.length === 0
-    ) {
-      return res.status(400).json({
-        message: "Bad request",
-      });
-    }
+    // if (
+    //   !name ||
+    //   !category ||
+    //   !sub_category ||
+    //   !description ||
+    //   !phone ||
+    //   !images ||
+    //   !Array.isArray(images) ||
+    //   images.length === 0
+    // ) {
+    //   return res.status(400).json({ message: "Bad request" });
+    // }
 
     const existingPhone = await Business.findOne({
       phone,
@@ -107,7 +163,7 @@ const registerBusiness = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Business registered successfully and sent for admin approval",
+      message: "Business registered successfully and sent for verification",
       business,
     });
   } catch (error) {
@@ -117,13 +173,15 @@ const registerBusiness = async (req, res) => {
       });
     }
 
-    return res.status(500).json({ message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ message: `Internal server error: ${error.message}` });
   }
 };
 
 const updateBusiness = async (req, res) => {
   try {
-    const { businessId } = req.params;
+    const { businessId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -169,24 +227,32 @@ const updateBusiness = async (req, res) => {
       }
     });
 
-    if (req.body.name !== currentName) {
+    if (req.body.name && req.body.name !== currentName) {
       business.slug = await buildUniqueSlug(req.body.name, req.body.slug);
     }
 
-    if (ownsBusiness) {
-      if (business.verified_status !== "pending") {
-        business.verified_status = "pending";
-        business.verified_by = undefined;
-        business.reject_reason = undefined;
-        await Verification.create({
-          business_id: business._id,
-          action: "pending",
-          reason: "Business updated by owner",
-        });
-      }
+    if (ownsBusiness && business.verified_status !== "pending") {
+      business.verified_status = "pending";
+      business.verified_by = undefined;
+      business.reject_reason = undefined;
+      await Verification.create({
+        business_id: business._id,
+        action: "pending",
+        reason: "Business updated by owner",
+      });
     }
 
     await business.save();
+
+    if (req.dbUser.role === "admin") {
+      await logAdminActivity(req, {
+        action: "update_business",
+        resource: "business",
+        resource_id: business._id,
+        resource_model: "Business",
+        details: { businessId, updatedBy: "admin" },
+      });
+    }
 
     return res.status(200).json({
       message: "Business updated successfully",
@@ -204,8 +270,7 @@ const updateBusiness = async (req, res) => {
 
 const updateBusinessTiming = async (req, res) => {
   try {
-    const { businessId } = req.params;
-    const { timing } = req.body;
+    const { businessId, timing } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -230,6 +295,16 @@ const updateBusinessTiming = async (req, res) => {
     business.timing = timing;
     await business.save();
 
+    if (req.dbUser.role === "admin") {
+      await logAdminActivity(req, {
+        action: "update_business_timing",
+        resource: "business",
+        resource_id: business._id,
+        resource_model: "Business",
+        details: { businessId },
+      });
+    }
+
     return res
       .status(200)
       .json({ message: "Business timing updated", business });
@@ -240,8 +315,7 @@ const updateBusinessTiming = async (req, res) => {
 
 const updateBusinessImages = async (req, res) => {
   try {
-    const { businessId } = req.params;
-    const { logo, images } = req.body;
+    const { businessId, logo, images } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -263,6 +337,16 @@ const updateBusinessImages = async (req, res) => {
     if (logo !== undefined) business.logo = logo;
     if (images !== undefined) business.images = images;
     await business.save();
+
+    if (req.dbUser.role === "admin") {
+      await logAdminActivity(req, {
+        action: "update_business_images",
+        resource: "business",
+        resource_id: business._id,
+        resource_model: "Business",
+        details: { businessId },
+      });
+    }
 
     return res
       .status(200)
@@ -287,7 +371,7 @@ const getMyBusinesses = async (req, res) => {
 
 const deleteBusiness = async (req, res) => {
   try {
-    const { businessId } = req.params;
+    const { businessId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid Business Id" });
@@ -299,70 +383,144 @@ const deleteBusiness = async (req, res) => {
     });
 
     if (!business) {
-      return res.status(404).json({
-        message: "Business not found",
+      return res.status(404).json({ message: "Business not found" });
+    }
+
+    if (req.dbUser.role === "admin") {
+      await logAdminActivity(req, {
+        action: "delete_business",
+        resource: "business",
+        resource_id: business._id,
+        resource_model: "Business",
+        details: { businessId },
       });
     }
 
-    return res.status(200).json({
-      message: "Business deleted",
-    });
+    return res.status(200).json({ message: "Business deleted" });
   } catch (error) {
-    return res.status(500).json({
-      message: "Internal server error",
-    });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// User
 const getApprovedBusinesses = async (req, res) => {
   try {
+    const body = req.body;
     const {
       category,
       sub_category,
       city,
+      cityId,
       search,
+      min_rating,
+      open_now,
+      lat,
+      lng,
+      max_km,
       page = 1,
       limit = 20,
-    } = req.body;
+    } = body;
 
-    const filter = {
-      verified_status: "verified",
-      is_active: true,
-    };
+    const filter = baseVerifiedFilter();
 
     if (category) filter.category = category;
     if (sub_category) filter.sub_category = sub_category;
-    if (city) filter.city = new RegExp(city, "i");
+
+    const cityRegex = await resolveCityFilter(city, cityId);
+    if (cityRegex) filter.city = cityRegex;
+
     if (search) {
-      filter.$text = {
-        $search: search,
-      };
+      filter.$text = { $search: search };
     }
-    // if (search) {
-    //   filter.$or = [
-    //     { name: new RegExp(search, "i") },
-    //     { description: new RegExp(search, "i") },
-    //     { services: new RegExp(search, "i") },
-    //   ];
-    // }
 
-    const businesses = await Business.find(filter)
+    let query = Business.find(filter)
       .populate("category", "name image icon")
-      .populate("sub_category", "name image icon")
-      .sort({ createdAt: -1 })
-      .skip((Number(page) - 1) * Number(limit))
-      .limit(Number(limit));
+      .populate("sub_category", "name image icon");
 
-    const total = await Business.countDocuments(filter);
+    if (search) {
+      query = query.select({ score: { $meta: "textScore" } }).sort({
+        score: { $meta: "textScore" },
+        rating: -1,
+      });
+    } else {
+      query = query.sort({ rating: -1, createdAt: -1 });
+    }
+
+    const allMatches = await query;
+    const filtered = applyPostListFilters(allMatches, {
+      min_rating,
+      open_now,
+      lat,
+      lng,
+      max_km,
+    });
+
+    const total = filtered.length;
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const businesses = filtered.slice(
+      (pageNum - 1) * limitNum,
+      pageNum * limitNum,
+    );
 
     return res.status(200).json({
       businesses,
       pagination: {
         total,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit)),
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getHomeSections = async (req, res) => {
+  try {
+    const { lat, lng, limit = 10, city, cityId } = req.body;
+    const sectionLimit = Math.min(Number(limit) || 10, 50);
+    const filter = baseVerifiedFilter();
+
+    const cityRegex = await resolveCityFilter(city, cityId);
+    if (cityRegex) filter.city = cityRegex;
+
+    const populateOpts = [
+      { path: "category", select: "name image icon" },
+      { path: "sub_category", select: "name image icon" },
+    ];
+
+    const [topRated, newlyVerified, trendingRaw] = await Promise.all([
+      Business.find(filter)
+        .populate(populateOpts)
+        .sort({ rating: -1, total_reviews: -1 })
+        .limit(sectionLimit),
+      Business.find(filter)
+        .populate(populateOpts)
+        .sort({ updatedAt: -1 })
+        .limit(sectionLimit),
+      Business.find(filter)
+        .populate(populateOpts)
+        .sort({ views: -1 })
+        .limit(sectionLimit * 3),
+    ]);
+
+    let trending = trendingRaw;
+    if (lat !== undefined && lng !== undefined) {
+      trending = applyPostListFilters(trendingRaw, {
+        lat,
+        lng,
+        max_km: req.body.max_km || 50,
+      }).slice(0, sectionLimit);
+    } else {
+      trending = trending.slice(0, sectionLimit);
+    }
+
+    return res.status(200).json({
+      sections: {
+        topRated,
+        newlyVerified,
+        trending,
       },
     });
   } catch (error) {
@@ -372,15 +530,15 @@ const getApprovedBusinesses = async (req, res) => {
 
 const getBusinessDetails = async (req, res) => {
   try {
-    const { idOrSlug } = req.params;
+    const { idOrSlug } = req.body;
     const filter = mongoose.Types.ObjectId.isValid(idOrSlug)
       ? { _id: idOrSlug }
       : { slug: idOrSlug };
+    console.log(filter);
 
     const business = await Business.findOne({
       ...filter,
-      verified_status: "verified",
-      is_active: true,
+      // ...baseVerifiedFilter(),
     })
       .populate("category", "name image icon")
       .populate("sub_category", "name image icon")
@@ -388,6 +546,14 @@ const getBusinessDetails = async (req, res) => {
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
+    }
+
+    if (req.dbUser) {
+      await RecentView.findOneAndUpdate(
+        { user_id: req.dbUser._id, business_id: business._id },
+        { view_at: new Date() },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
     }
 
     return res.status(200).json({ business });
@@ -398,7 +564,7 @@ const getBusinessDetails = async (req, res) => {
 
 const trackBusinessAction = async (req, res) => {
   try {
-    const { businessId, action } = req.params;
+    const { businessId, action } = req.body;
     const actionFields = {
       view: "views",
       call: "call_click",
@@ -414,7 +580,7 @@ const trackBusinessAction = async (req, res) => {
     }
 
     const business = await Business.findOneAndUpdate(
-      { _id: businessId, verified_status: "verified", is_active: true },
+      { _id: businessId, ...baseVerifiedFilter() },
       { $inc: { [actionFields[action]]: 1 } },
       { new: true },
     );
@@ -443,8 +609,7 @@ const trackBusinessAction = async (req, res) => {
 
 const suspendBusiness = async (req, res) => {
   try {
-    const { businessId } = req.params;
-    const { is_active } = req.body;
+    const { businessId, is_active } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -479,6 +644,7 @@ module.exports = {
   getMyBusinesses,
   deleteBusiness,
   getApprovedBusinesses,
+  getHomeSections,
   getBusinessDetails,
   trackBusinessAction,
   suspendBusiness,

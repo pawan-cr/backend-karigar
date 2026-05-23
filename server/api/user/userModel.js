@@ -19,12 +19,12 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
     },
-    phone: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true,
-    },
+    // phone: {
+    //   type: String,
+    //   trim: true,
+    //   unique: true,
+    //   // sparse: true,
+    // },
     profile_image: {
       type: String,
       // required: true,

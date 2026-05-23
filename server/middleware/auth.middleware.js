@@ -1,5 +1,25 @@
 const { auth } = require("../config/firebase");
 const User = require("../api/user/userModel");
+const { verifyAppToken } = require("../utils/jwt");
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = await auth.verifyIdToken(token);
+    req.user = decoded;
+    req.authType = "firebase";
+    return next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired Firebase token" });
+  }
+};
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -12,23 +32,34 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = await auth.verifyIdToken(token);
-    // console.log("Decoded token:", decoded);
-    // if (!decoded.uid) {
-    //   return res
-    //     .status(401)
-    //     .json({ message: "Invalid token: Missing firebase_uid" });
-    // }
-
     req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    req.authType = "firebase";
+    return next();
+  } catch (firebaseError) {
+    try {
+      const payload = verifyAppToken(token);
+      req.user = {
+        uid: payload.uid,
+        userId: payload.userId,
+        role: payload.role,
+      };
+      req.authType = "jwt";
+      return next();
+    } catch (jwtError) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
   }
 };
 
 const checkUser = async (req, res, next) => {
   try {
-    const user = await User.findOne({ firebase_uid: req.user.uid });
+    let user;
+    if (req.authType === "jwt" && req.user.userId) {
+      user = await User.findById(req.user.userId);
+    }
+    if (!user && req.user.uid) {
+      user = await User.findOne({ firebase_uid: req.user.uid });
+    }
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -74,37 +105,49 @@ const isVerifier = async (req, res, next) => {
   next();
 };
 
-// const isAdmin = async (req, res, next) => {
-//   try {
-//     const user = await User.findOne({ firebase_uid: req.user.uid });
-//     if (!user || user.role !== "admin") {
-//       return res.status(401).json({ message: "Unauthorized: Admins only" });
-//     }
-//     req.dbUser = user;
-//     next();
-//   } catch (error) {
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// };
+const optionalCheckUser = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
 
-// const isBusinessOwner = async (req, res, next) => {
-//   try {
-//     const user = await User.findOne({ firebase_uid: req.user.uid });
-//     if (!user || !["businessOwner", "admin"].includes(user.role)) {
-//       return res
-//         .status(401)
-//         .json({ message: "Unauthorized: Business Owners only" });
-//     }
-//     req.dbUser = user;
-//     next();
-//   } catch (error) {
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// };
+  const token = authHeader.split(" ")[1];
+  try {
+    try {
+      const decoded = await auth.verifyIdToken(token);
+      req.user = decoded;
+      req.authType = "firebase";
+    } catch (firebaseError) {
+      const payload = verifyAppToken(token);
+      req.user = {
+        uid: payload.uid || payload.firebase_uid,
+        userId: payload.userId,
+        role: payload.role,
+      };
+      req.authType = "jwt";
+    }
+
+    let user;
+    if (req.authType === "jwt" && req.user.userId) {
+      user = await User.findById(req.user.userId);
+    }
+    if (!user && req.user.uid) {
+      user = await User.findOne({ firebase_uid: req.user.uid });
+    }
+    if (user && !user.is_blocked) {
+      req.dbUser = user;
+    }
+  } catch (error) {
+    // optional auth — continue without user
+  }
+  return next();
+};
 
 module.exports = {
+  verifyFirebaseToken,
   verifyToken,
   checkUser,
+  optionalCheckUser,
   isAdmin,
   isBusinessOwner,
   isVerifier,

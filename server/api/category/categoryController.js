@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Category = require("./categoryModel");
 const SubCategory = require("../subCategory/subCategoryModel");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 const getCategories = async (req, res) => {
   try {
@@ -21,6 +22,13 @@ const createCategory = async (req, res) => {
     }
 
     const category = await Category.create({ name, image, icon, status });
+    await logAdminActivity(req, {
+      action: "create_category",
+      resource: "category",
+      resource_id: category._id,
+      resource_model: "Category",
+      details: { name, status },
+    });
     return res.status(201).json({ message: "Category created", category });
   } catch (error) {
     if (error.code === 11000) {
@@ -51,6 +59,13 @@ const updateCategory = async (req, res) => {
 
     if (!category)
       return res.status(404).json({ message: "Category not found" });
+    await logAdminActivity(req, {
+      action: "update_category",
+      resource: "category",
+      resource_id: category._id,
+      resource_model: "Category",
+      details: { categoryId, name, status },
+    });
     return res.status(200).json({ message: "Category updated", category });
   } catch (error) {
     if (error.code === 11000) {
@@ -80,6 +95,13 @@ const createSubCategory = async (req, res) => {
       image,
       icon,
       status,
+    });
+    await logAdminActivity(req, {
+      action: "create_sub_category",
+      resource: "subCategory",
+      resource_id: subCategory._id,
+      resource_model: "SubCategory",
+      details: { category_id, name, status },
     });
     return res
       .status(201)
@@ -130,6 +152,13 @@ const updateSubCategory = async (req, res) => {
 
     if (!subCategory)
       return res.status(404).json({ message: "Sub category not found" });
+    await logAdminActivity(req, {
+      action: "update_sub_category",
+      resource: "subCategory",
+      resource_id: subCategory._id,
+      resource_model: "SubCategory",
+      details: { subCategoryId, name, status },
+    });
     return res
       .status(200)
       .json({ message: "Sub category updated", subCategory });

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Report = require("./reportModel");
 const Business = require("../business/businessModel");
 const { createUserNotification } = require("../../utils/notify");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 const createReport = async (req, res) => {
   try {
@@ -113,6 +114,18 @@ const updateReportStatus = async (req, res) => {
       `Your report for ${report.business_id?.name || "a business"} was ${status}.`,
       "report_status",
     );
+
+    await logAdminActivity(req, {
+      action: status === "approved" ? "approve_report" : status === "rejected" ? "reject_report" : "update_report_status",
+      resource: "report",
+      resource_id: report._id,
+      resource_model: "Report",
+      details: {
+        reportId,
+        status,
+        businessId: report.business_id?._id || null,
+      },
+    });
 
     return res.status(200).json({
       message: `Report ${status}`,

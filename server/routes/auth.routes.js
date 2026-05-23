@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   verifyToken,
+  verifyFirebaseToken,
   checkUser,
   isAdmin,
 } = require("../middleware/auth.middleware");
@@ -12,17 +13,18 @@ const {
   blockUser,
   getAllUsers,
   changeUserRole,
+  searchAdmin,
 } = require("../api/auth/auth.controller");
 
-router.post("/login", verifyToken, loginUser);
-router.post("/me", verifyToken, getMe);
-router.post("/profile", verifyToken, updateProfile);
+router.post("/login", verifyFirebaseToken, loginUser);
+router.post("/me", verifyToken, checkUser, getMe);
+router.post("/profile", verifyToken, checkUser, updateProfile);
 
-// admin only routes
 router.post("/users", verifyToken, checkUser, isAdmin, getAllUsers);
-router.post("/users/:userId/block", verifyToken, checkUser, isAdmin, blockUser);
+router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
+router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
 router.post(
-  "/users/:userId/role",
+  "/users/role",
   verifyToken,
   checkUser,
   isAdmin,

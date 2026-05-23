@@ -2,6 +2,7 @@ const Business = require("../business/businessModel");
 const Verification = require("./verificationModel");
 const mongoose = require("mongoose");
 const { createUserNotification } = require("../../utils/notify");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 const isValidBusinessId = (businessId) =>
   mongoose.Types.ObjectId.isValid(businessId);
@@ -102,6 +103,13 @@ const approveBusiness = async (req, res) => {
       `${business.name} has been verified and is now live.`,
       "verification_approved",
     );
+    await logAdminActivity(req, {
+      action: "approve_business",
+      resource: "business",
+      resource_id: business._id,
+      resource_model: "Business",
+      details: { businessId, action: "approved" },
+    });
 
     return res.status(200).json({
       message: "Business approved successfully",
@@ -152,6 +160,13 @@ const rejectBusiness = async (req, res) => {
       `${business.name} was rejected: ${reason}`,
       "verification_rejected",
     );
+    await logAdminActivity(req, {
+      action: "reject_business",
+      resource: "business",
+      resource_id: business._id,
+      resource_model: "Business",
+      details: { businessId, reason, action: "rejected" },
+    });
 
     return res.status(200).json({
       message: "Business rejected successfully",

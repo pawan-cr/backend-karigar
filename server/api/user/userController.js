@@ -3,6 +3,7 @@
 
 const User = require("./userModel");
 const bcrypt = require("bcrypt");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 // API to create User - old JWT style -> check auth.controller.js in auth for new one
 const createUser = async (req, res) => {
@@ -152,6 +153,14 @@ const deleteUser = async (req, res) => {
 
     existingUser.is_blocked = true;
     await existingUser.save();
+
+    await logAdminActivity(req, {
+      action: "delete_user",
+      resource: "user",
+      resource_id: existingUser._id,
+      resource_model: "User",
+      details: { userId: targetUserId },
+    });
 
     return res.status(200).json({
       message: "User blocked successfully",

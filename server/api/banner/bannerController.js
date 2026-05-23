@@ -1,4 +1,5 @@
 const Banner = require("./bannerModel");
+const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 const getActiveBanners = async (req, res) => {
   try {
@@ -17,6 +18,13 @@ const createBanner = async (req, res) => {
     }
 
     const banner = await Banner.create({ title, image, redirect_url, status });
+    await logAdminActivity(req, {
+      action: "create_banner",
+      resource: "banner",
+      resource_id: banner._id,
+      resource_model: "Banner",
+      details: { title, status },
+    });
     return res.status(201).json({ message: "Banner created", banner });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
@@ -33,6 +41,14 @@ const updateBanner = async (req, res) => {
     if (!banner) {
       return res.status(404).json({ message: "Banner not found" });
     }
+
+    await logAdminActivity(req, {
+      action: "update_banner",
+      resource: "banner",
+      resource_id: banner._id,
+      resource_model: "Banner",
+      details: { bannerId, updates: req.body },
+    });
 
     return res.status(200).json({ message: "Banner updated", banner });
   } catch (error) {
