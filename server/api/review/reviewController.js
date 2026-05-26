@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Business = require("../business/businessModel");
 const { Review, ReviewVote } = require("./reviewModel");
+const { createUserNotification } = require("../../utils/notify");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -74,6 +75,13 @@ const addReview = async (req, res) => {
       $addToSet: { reviews: review._id },
     });
     await refreshBusinessRating(businessId);
+
+    await createUserNotification(
+      business.owner_id,
+      "New review received",
+      `${req.dbUser.name || "Someone"} left a ${rating}★ review on ${business.name}`,
+      "new_review",
+    );
 
     return res
       .status(201)
@@ -241,6 +249,13 @@ const replyToReview = async (req, res) => {
 
     review.owner_reply = { message, replied_at: new Date() };
     await review.save();
+
+    await createUserNotification(
+      review.user_id,
+      "Response to your review",
+      `${review.business_id.name} replied to your review`,
+      "review_reply",
+    );
 
     return res
       .status(200)

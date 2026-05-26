@@ -6,12 +6,12 @@ const Category = require("../category/categoryModel");
 const City = require("../cities/citiesModel");
 const Report = require("../reports/reportModel");
 const Verification = require("../verification/verificationModel");
-const { logAdminActivity } = require("../adminActivity/adminActivityController");
+const {
+  logAdminActivity,
+} = require("../adminActivity/adminActivityController");
 
 const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner"];
 const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin"];
-
-
 
 const loginUser = async (req, res) => {
   try {
@@ -58,7 +58,10 @@ const loginUser = async (req, res) => {
     }
 
     if (user.is_blocked) {
-      console.warn("[loginUser] Blocked user attempted login:", { _id: user._id, email: user.email });
+      console.warn("[loginUser] Blocked user attempted login:", {
+        _id: user._id,
+        email: user.email,
+      });
       return res.status(403).json({
         message: "Your account has been blocked",
         is_blocked: true,
@@ -82,7 +85,6 @@ const loginUser = async (req, res) => {
       message: "Login successful",
       isNew: false,
     });
-
   } catch (error) {
     console.error("[loginUser] Unexpected error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -197,8 +199,7 @@ const getAllUsers = async (req, res) => {
       resource: "user",
       details: {
         role: role || null,
-        is_blocked:
-          is_blocked === undefined ? null : is_blocked === "true",
+        is_blocked: is_blocked === undefined ? null : is_blocked === "true",
         search: search || "",
         page: Number(page),
         limit: Number(limit),
@@ -406,7 +407,11 @@ const searchAdmin = async (req, res) => {
     await logAdminActivity(req, {
       action: "global_search",
       resource: "search",
-      details: { q: query, include: Array.from(includeSet), limit: Number(limit) },
+      details: {
+        q: query,
+        include: Array.from(includeSet),
+        limit: Number(limit),
+      },
     });
 
     return res.status(200).json({
@@ -418,6 +423,15 @@ const searchAdmin = async (req, res) => {
   }
 };
 
+const updateFcmToken = async (req, res) => {
+  const { fcm_token } = req.body;
+  if (!fcm_token) {
+    return res.status(400).json({ message: "Token required" });
+  }
+  await User.findByIdAndUpdate(req.dbUser._id, { fcm_token });
+  return res.status(200).json({ message: "FCM token saved" });
+};
+
 module.exports = {
   loginUser,
   getMe,
@@ -426,4 +440,5 @@ module.exports = {
   getAllUsers,
   changeUserRole,
   searchAdmin,
+  updateFcmToken,
 };
