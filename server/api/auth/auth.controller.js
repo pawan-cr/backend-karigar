@@ -432,6 +432,15 @@ const searchAdmin = async (req, res) => {
   }
 };
 
+const updateFcmToken = async (req, res) => {
+  const { fcm_token } = req.body;
+  if (!fcm_token) {
+    return res.status(400).json({ message: "Token required" });
+  }
+  await User.findByIdAndUpdate(req.dbUser._id, { fcm_token });
+  return res.status(200).json({ message: "FCM token saved" });
+};
+
 module.exports = {
   loginUser,
   getMe,
@@ -440,4 +449,5 @@ module.exports = {
   getAllUsers,
   changeUserRole,
   searchAdmin,
+  updateFcmToken,
 };
