@@ -4,13 +4,9 @@ const upload = require("../middleware/upload");
 const {
   verifyToken,
   checkUser,
-  optionalCheckUser,
   isBusinessOwner,
 } = require("../middleware/auth.middleware");
-const {
-  getBusinessAnalytics,
-} = require("../api/businessAnalytics/analyticsController");
-const { getActiveBanners } = require("../api/banner/bannerController");
+
 const {
   registerBusiness,
   getMyBusinesses,
@@ -18,36 +14,15 @@ const {
   updateBusinessTiming,
   updateBusinessImages,
   deleteBusiness,
-  getHomeSections,
-  getApprovedBusinesses,
-  getBusinessDetails,
-  trackBusinessAction,
 } = require("../api/business/businessController");
+const { replyToReview } = require("../api/review/reviewController");
 const {
-  getCategories,
-  getSubCategories,
-} = require("../api/category/categoryController");
-const { getActiveCities } = require("../api/cities/citiesController");
-const {
-  getBusinessReviews,
-  replyToReview,
-} = require("../api/review/reviewController");
-
-// analytics routes
-router.post(
-  "/business",
-  verifyToken,
-  checkUser,
-  isBusinessOwner,
   getBusinessAnalytics,
-);
+} = require("../api/businessAnalytics/analyticsController");
 
-// banner routes
-router.post("/list", getActiveBanners);
-
-// business routes
+// Business routes
 router.post(
-  "/register",
+  "/business/register",
   verifyToken,
   checkUser,
   isBusinessOwner,
@@ -58,14 +33,14 @@ router.post(
   registerBusiness,
 );
 router.post(
-  "/owner/me",
+  "/business/me",
   verifyToken,
   checkUser,
   isBusinessOwner,
   getMyBusinesses,
 );
 router.post(
-  "/update",
+  "/business/update",
   verifyToken,
   checkUser,
   isBusinessOwner,
@@ -76,34 +51,43 @@ router.post(
   updateBusiness,
 );
 router.post(
-  "/timing",
+  "/business/timing",
   verifyToken,
   checkUser,
   isBusinessOwner,
   updateBusinessTiming,
 );
 router.post(
-  "/images",
+  "/business/images",
   verifyToken,
   checkUser,
   isBusinessOwner,
   updateBusinessImages,
 );
-router.post("/delete", verifyToken, checkUser, isBusinessOwner, deleteBusiness);
-router.post("/home", getHomeSections);
-router.post("/list", getApprovedBusinesses);
-router.post("/details", optionalCheckUser, getBusinessDetails);
-router.post("/track", trackBusinessAction);
+router.post(
+  "/business/delete",
+  verifyToken,
+  checkUser,
+  isBusinessOwner,
+  deleteBusiness,
+);
 
-// category routes
-router.post("/list", getCategories);
-router.post("/sub-categories/list", getSubCategories);
+// Reviews routes
+router.post(
+  "/reviews/reply",
+  verifyToken,
+  checkUser,
+  isBusinessOwner,
+  replyToReview,
+);
 
-// city routes
-router.post("/list", getActiveCities);
-
-// review routes
-router.post("/business/list", getBusinessReviews);
-router.post("/reply", verifyToken, checkUser, isBusinessOwner, replyToReview);
+// Analytics routes
+router.post(
+  "/analytics/business",
+  verifyToken,
+  checkUser,
+  isBusinessOwner,
+  getBusinessAnalytics,
+);
 
 module.exports = router;

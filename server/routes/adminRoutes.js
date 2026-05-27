@@ -4,98 +4,97 @@ const upload = require("../middleware/upload");
 const {
   verifyToken,
   checkUser,
-  optionalCheckUser,
   isAdmin,
   isVerifier,
 } = require("../middleware/auth.middleware");
+
 const {
-  getAdminDashboard,
-  getAdminActivityLog,
-} = require("../api/businessAnalytics/analyticsController");
-const {
-  getActiveBanners,
-  createBanner,
-  updateBanner,
-} = require("../api/banner/bannerController");
-const {
-  getHomeSections,
-  getApprovedBusinesses,
-  getBusinessDetails,
-  trackBusinessAction,
-  suspendBusiness,
-} = require("../api/business/businessController");
-const {
-  getCategories,
-  createCategory,
-  updateCategory,
-  createSubCategory,
-  getSubCategories,
-  updateSubCategory,
-} = require("../api/category/categoryController");
-const {
-  createCity,
-  getAllCities,
-  getCityById,
-  updateCity,
-  deleteCity,
-  getActiveCities,
-} = require("../api/cities/citiesController");
-const {
-  createNotification,
-} = require("../api/notification/notificationController");
-const {
-  getAllReports,
-  getReportById,
-  approveReport,
-  rejectReport,
-  updateReportStatus,
-  getBusinessReports,
-} = require("../api/reports/reportController");
-const {
-  getBusinessReviews,
-  updateReviewStatus,
-} = require("../api/review/reviewController");
+  getAllUsers,
+  blockUser,
+  changeUserRole,
+  searchAdmin,
+} = require("../api/auth/auth.controller");
+
+const { suspendBusiness } = require("../api/business/businessController");
 const {
   getVerificationBusinesses,
   approveBusiness,
   rejectBusiness,
   getVerificationHistory,
 } = require("../api/verification/verificationController");
-
-// analytics routes
-router.post("/dashboard", verifyToken, checkUser, isAdmin, getAdminDashboard);
-router.post(
-  "/activity-log",
-  verifyToken,
-  checkUser,
-  isAdmin,
-  getAdminActivityLog,
-);
-
-// banner routes
-router.post("/list", getActiveBanners);
-router.post(
-  "/create",
-  verifyToken,
-  checkUser,
-  isAdmin,
-  upload.single("banner_image"),
+const {
+  createCategory,
+  updateCategory,
+  createSubCategory,
+  updateSubCategory,
+} = require("../api/category/categoryController");
+const { createCity, updateCity } = require("../api/cities/citiesController");
+const {
   createBanner,
-);
-router.post("/update", verifyToken, checkUser, isAdmin, updateBanner);
+  updateBanner,
+} = require("../api/banner/bannerController");
+const {
+  getAllReports,
+  updateReportStatus,
+  getBusinessReports,
+} = require("../api/reports/reportController");
+const { updateReviewStatus } = require("../api/review/reviewController");
+const {
+  getAdminDashboard,
+  getAdminActivityLog,
+} = require("../api/businessAnalytics/analyticsController");
+const {
+  createNotification,
+} = require("../api/notification/notificationController");
 
-// business routes
-router.post("/home", getHomeSections);
-router.post("/list", getApprovedBusinesses);
-router.post("/details", optionalCheckUser, getBusinessDetails);
-router.post("/track", trackBusinessAction);
-router.post("/suspend", verifyToken, checkUser, isAdmin, suspendBusiness);
+// User routes
+router.post("/users/list", verifyToken, checkUser, isAdmin, getAllUsers);
+router.post("/users/search", verifyToken, checkUser, isAdmin, searchAdmin);
+router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
+router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
 
-// category routes
-router.post("/list", getCategories);
-router.post("/sub-categories/list", getSubCategories);
+// Business routes
 router.post(
-  "/create",
+  "/business/suspend",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  suspendBusiness,
+);
+
+// Verification routes
+router.post(
+  "/verification/list",
+  verifyToken,
+  checkUser,
+  isVerifier,
+  getVerificationBusinesses,
+);
+router.post(
+  "/verification/approve",
+  verifyToken,
+  checkUser,
+  isVerifier,
+  approveBusiness,
+);
+router.post(
+  "/verification/reject",
+  verifyToken,
+  checkUser,
+  isVerifier,
+  rejectBusiness,
+);
+router.post(
+  "/verification/history",
+  verifyToken,
+  checkUser,
+  isVerifier,
+  getVerificationHistory,
+);
+
+// Categories routes
+router.post(
+  "/categories/create",
   verifyToken,
   checkUser,
   isAdmin,
@@ -103,15 +102,7 @@ router.post(
   createCategory,
 );
 router.post(
-  "/sub-categories/create",
-  verifyToken,
-  checkUser,
-  isAdmin,
-  upload.single("subcategory_image"),
-  createSubCategory,
-);
-router.post(
-  "/update",
+  "/categories/update",
   verifyToken,
   checkUser,
   isAdmin,
@@ -119,7 +110,15 @@ router.post(
   updateCategory,
 );
 router.post(
-  "/sub-categories/update",
+  "/categories/sub-categories/create",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  upload.single("subcategory_image"),
+  createSubCategory,
+);
+router.post(
+  "/categories/sub-categories/update",
   verifyToken,
   checkUser,
   isAdmin,
@@ -127,52 +126,70 @@ router.post(
   updateSubCategory,
 );
 
-// city routes
-router.post("/list", getActiveCities);
-router.post("/create", verifyToken, checkUser, isAdmin, createCity);
-router.post("/getallcities", verifyToken, checkUser, isAdmin, getAllCities);
-router.post("/getcitybyid", verifyToken, checkUser, isAdmin, getCityById);
-router.post("/update", verifyToken, checkUser, isAdmin, updateCity);
-router.post("/updatecitybyid", verifyToken, checkUser, isAdmin, updateCity);
-router.post("/deletecitybyid", verifyToken, checkUser, isAdmin, deleteCity);
+// Cities routes
+router.post("/cities/create", verifyToken, checkUser, isAdmin, createCity);
+router.post("/cities/update", verifyToken, checkUser, isAdmin, updateCity);
 
-// notification routes
-router.post("/create", verifyToken, checkUser, isAdmin, createNotification);
-
-// reports routes
+// Banners routes
 router.post(
-  "/business/list",
+  "/banners/create",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  upload.single("banner_image"),
+  createBanner,
+);
+router.post("/banners/update", verifyToken, checkUser, isAdmin, updateBanner);
+
+// Reports routes
+router.post("/reports/list", verifyToken, checkUser, isAdmin, getAllReports);
+router.post(
+  "/reports/status",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  updateReportStatus,
+);
+router.post(
+  "/reports/business/list",
   verifyToken,
   checkUser,
   isAdmin,
   getBusinessReports,
 );
-router.post("/", verifyToken, checkUser, isAdmin, getAllReports);
-router.post("/status", verifyToken, checkUser, isAdmin, updateReportStatus);
-router.post("/approvereport", verifyToken, checkUser, isAdmin, approveReport);
-router.post("/rejectreport", verifyToken, checkUser, isAdmin, rejectReport);
-router.post("/getreportbyid", verifyToken, checkUser, isAdmin, getReportById);
 
-// review routes
-router.post("/business/list", getBusinessReviews);
-router.post("/status", verifyToken, checkUser, isAdmin, updateReviewStatus);
-
-// verification routes
+// Reviews routes
 router.post(
-  "/list",
+  "/reviews/status",
   verifyToken,
   checkUser,
-  isVerifier,
-  getVerificationBusinesses,
+  isAdmin,
+  updateReviewStatus,
 );
-router.post("/approve", verifyToken, checkUser, isVerifier, approveBusiness);
-router.post("/reject", verifyToken, checkUser, isVerifier, rejectBusiness);
+
+// Analytics routes
 router.post(
-  "/history",
+  "/analytics/dashboard",
   verifyToken,
   checkUser,
-  isVerifier,
-  getVerificationHistory,
+  isAdmin,
+  getAdminDashboard,
+);
+router.post(
+  "/analytics/activity-log",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  getAdminActivityLog,
+);
+
+// Notifications routes
+router.post(
+  "/notifications/create",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  createNotification,
 );
 
 module.exports = router;

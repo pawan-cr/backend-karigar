@@ -6,7 +6,13 @@ const {
   checkUser,
   optionalCheckUser,
 } = require("../middleware/auth.middleware");
-const { getActiveBanners } = require("../api/banner/bannerController");
+
+const {
+  loginUser,
+  getMe,
+  updateProfile,
+  updateFcmToken,
+} = require("../api/auth/auth.controller");
 const {
   getHomeSections,
   getApprovedBusinesses,
@@ -18,20 +24,7 @@ const {
   getSubCategories,
 } = require("../api/category/categoryController");
 const { getActiveCities } = require("../api/cities/citiesController");
-const {
-  getMyFavourites,
-  saveFavourite,
-  removeFavourite,
-} = require("../api/favourites/favouriteController");
-const {
-  getMyNotifications,
-  markNotificationRead,
-} = require("../api/notification/notificationController");
-const {
-  addRecentView,
-  getRecentViews,
-} = require("../api/recentView/recentController");
-const { createReport } = require("../api/reports/reportController");
+const { getActiveBanners } = require("../api/banner/bannerController");
 const {
   getBusinessReviews,
   addReview,
@@ -40,57 +33,90 @@ const {
   deleteReview,
   voteReview,
 } = require("../api/review/reviewController");
+const {
+  getMyFavourites,
+  saveFavourite,
+  removeFavourite,
+} = require("../api/favourites/favouriteController");
+const {
+  getRecentViews,
+  addRecentView,
+} = require("../api/recentView/recentController");
+const {
+  getMyNotifications,
+  markNotificationRead,
+} = require("../api/notification/notificationController");
+const { createReport } = require("../api/reports/reportController");
 
-// banner routes
-router.post("/list", getActiveBanners);
-
-// business routes
-router.post("/home", getHomeSections);
-router.post("/list", getApprovedBusinesses);
-router.post("/details", optionalCheckUser, getBusinessDetails);
-router.post("/track", trackBusinessAction);
-
-// category routes
-router.post("/list", getCategories);
-router.post("/sub-categories/list", getSubCategories);
-
-// city routes
-router.post("/list", getActiveCities);
-
-// favourite routes
-router.post("/", verifyToken, checkUser, getMyFavourites);
-router.post("/save", verifyToken, checkUser, saveFavourite);
-router.post("/remove", verifyToken, checkUser, removeFavourite);
-
-// notification routes
-router.post("/list", verifyToken, checkUser, getMyNotifications);
-router.post("/read", verifyToken, checkUser, markNotificationRead);
-
-// recent view routes
-router.post("/", verifyToken, checkUser, getRecentViews);
-router.post("/add", verifyToken, checkUser, addRecentView);
-
-// report routes
-router.post("/business/create", verifyToken, checkUser, createReport);
-
-// review routes
-router.post("/business/list", getBusinessReviews);
+// Auth routes
+router.post("/auth/login", verifyToken, loginUser);
+router.post("/auth/me", verifyToken, checkUser, getMe);
 router.post(
-  "/business/add",
+  "/auth/profile",
+  verifyToken,
+  checkUser,
+  upload.single("profile_image"),
+  updateProfile,
+);
+router.post("/auth/fcm-token", verifyToken, checkUser, updateFcmToken);
+
+// Public: Business routes
+router.post("/business/home", getHomeSections);
+router.post("/business/list", getApprovedBusinesses);
+router.post("/business/details", optionalCheckUser, getBusinessDetails);
+router.post("/business/track", trackBusinessAction);
+
+// Public: Categories routes
+router.post("/categories/list", getCategories);
+router.post("/categories/sub-categories/list", getSubCategories);
+
+// Public: Cities routes
+router.post("/cities/list", getActiveCities);
+
+// Public: Banners routes
+router.post("/banners/list", getActiveBanners);
+
+// Public: Reviews routes
+router.post("/reviews/business/list", getBusinessReviews);
+
+// Authenticated: Reviews routes
+router.post(
+  "/reviews/business/add",
   verifyToken,
   checkUser,
   upload.array("review_images", 5),
   addReview,
 );
-router.post("/me", verifyToken, checkUser, getMyReviews);
+router.post("/reviews/me", verifyToken, checkUser, getMyReviews);
 router.post(
-  "/edit",
+  "/reviews/edit",
   verifyToken,
   checkUser,
   upload.array("review_images", 5),
   editReview,
 );
-router.post("/delete", verifyToken, checkUser, deleteReview);
-router.post("/vote", verifyToken, checkUser, voteReview);
+router.post("/reviews/delete", verifyToken, checkUser, deleteReview);
+router.post("/reviews/vote", verifyToken, checkUser, voteReview);
+
+//  Favourites routes
+router.post("/favourites/list", verifyToken, checkUser, getMyFavourites);
+router.post("/favourites/save", verifyToken, checkUser, saveFavourite);
+router.post("/favourites/remove", verifyToken, checkUser, removeFavourite);
+
+// Recent Views routes
+router.post("/recent-views/list", verifyToken, checkUser, getRecentViews);
+router.post("/recent-views/add", verifyToken, checkUser, addRecentView);
+
+// Notifications routes
+router.post("/notifications/list", verifyToken, checkUser, getMyNotifications);
+router.post(
+  "/notifications/read",
+  verifyToken,
+  checkUser,
+  markNotificationRead,
+);
+
+// Reports routes
+router.post("/reports/create", verifyToken, checkUser, createReport);
 
 module.exports = router;
