@@ -1,28 +1,51 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/upload");
 const {
   verifyToken,
   checkUser,
   optionalCheckUser,
-  isAdmin,
   isBusinessOwner,
 } = require("../middleware/auth.middleware");
 const {
+  getBusinessAnalytics,
+} = require("../api/businessAnalytics/analyticsController");
+const { getActiveBanners } = require("../api/banner/bannerController");
+const {
   registerBusiness,
+  getMyBusinesses,
   updateBusiness,
   updateBusinessTiming,
   updateBusinessImages,
-  getMyBusinesses,
   deleteBusiness,
-  getApprovedBusinesses,
   getHomeSections,
+  getApprovedBusinesses,
   getBusinessDetails,
   trackBusinessAction,
-  suspendBusiness,
 } = require("../api/business/businessController");
-const upload = require("../middleware/upload");
+const {
+  getCategories,
+  getSubCategories,
+} = require("../api/category/categoryController");
+const { getActiveCities } = require("../api/cities/citiesController");
+const {
+  getBusinessReviews,
+  replyToReview,
+} = require("../api/review/reviewController");
 
-// Business Owner Routes
+// analytics routes
+router.post(
+  "/business",
+  verifyToken,
+  checkUser,
+  isBusinessOwner,
+  getBusinessAnalytics,
+);
+
+// banner routes
+router.post("/list", getActiveBanners);
+
+// business routes
 router.post(
   "/register",
   verifyToken,
@@ -67,14 +90,20 @@ router.post(
   updateBusinessImages,
 );
 router.post("/delete", verifyToken, checkUser, isBusinessOwner, deleteBusiness);
-
-// User routes
 router.post("/home", getHomeSections);
 router.post("/list", getApprovedBusinesses);
 router.post("/details", optionalCheckUser, getBusinessDetails);
 router.post("/track", trackBusinessAction);
 
-// Admin routes
-router.post("/suspend", verifyToken, checkUser, isAdmin, suspendBusiness);
+// category routes
+router.post("/list", getCategories);
+router.post("/sub-categories/list", getSubCategories);
+
+// city routes
+router.post("/list", getActiveCities);
+
+// review routes
+router.post("/business/list", getBusinessReviews);
+router.post("/reply", verifyToken, checkUser, isBusinessOwner, replyToReview);
 
 module.exports = router;

@@ -36,7 +36,9 @@ router.post(
 );
 router.post("/delete", verifyToken, checkUser, deleteReview);
 router.post("/vote", verifyToken, checkUser, voteReview);
+
 router.post("/reply", verifyToken, checkUser, isBusinessOwner, replyToReview);
+
 router.post("/status", verifyToken, checkUser, isAdmin, updateReviewStatus);
 
 module.exports = router;

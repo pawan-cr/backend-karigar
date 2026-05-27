@@ -19,12 +19,12 @@ router.post(
   isAdmin,
   getBusinessReports,
 );
-router.post("/createreport", verifyToken, checkUser, createReport);
+// router.post("/createreport", verifyToken, checkUser, createReport);
 router.post("/", verifyToken, checkUser, isAdmin, getAllReports);
 router.post("/status", verifyToken, checkUser, isAdmin, updateReportStatus);
 router.post("/approvereport", verifyToken, checkUser, isAdmin, approveReport);
 router.post("/rejectreport", verifyToken, checkUser, isAdmin, rejectReport);
 router.post("/getreportbyid", verifyToken, checkUser, isAdmin, getReportById);
-router.post("/getbusinessreports", verifyToken, checkUser, isAdmin, getBusinessReports);
+// router.post("/getbusinessreports", verifyToken, checkUser, isAdmin, getBusinessReports);
 
 module.exports = router;
