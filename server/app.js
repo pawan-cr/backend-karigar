@@ -4,9 +4,9 @@ const cors = require("cors");
 const path = require("path");
 const morgan = require("morgan");
 const authRoutes = require("./routes/auth.routes");
-const AdminRoutes = require("./routes/adminRoutes")
-const BusinessRoutes = require("./routes/businessRoutes")
-const UserRoutes = require("./routes/userRoutes")
+const AdminRoutes = require("./routes/adminRoutes");
+const BusinessRoutes = require("./routes/businessRoutes");
+const UserRoutes = require("./routes/userRoutes");
 
 // const userRoutes = require("./routes/user.routes");
 // const businessRoutes = require("./routes/business.routes");
@@ -21,12 +21,19 @@ const UserRoutes = require("./routes/userRoutes")
 // const bannerRoutes = require("./routes/banner.routes");
 // const cityRoutes = require("./routes/cities.routes");
 
-
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: [
+      "https://uneulogized-steeply-araceli.ngrok-free.dev",
+      "localhost:3000",
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
-app.use("/uploads", express.static(path.join("public/uploads")));
+app.use("/uploads", express.static(path.join(__dirname,"public/uploads")));
 
 // app.use("/api/auth", authRoutes);
 // app.use("/api/users", userRoutes);
@@ -42,8 +49,8 @@ app.use("/uploads", express.static(path.join("public/uploads")));
 // app.use("/api/banners", bannerRoutes);
 // app.use("/api/cities", cityRoutes);
 
-app.use("/api/admin", AdminRoutes)
-app.use("/api", BusinessRoutes)
-app.use("/api", UserRoutes)
-app.use("/api/auth", authRoutes)
+app.use("/api/admin", AdminRoutes);
+app.use("/api", BusinessRoutes);
+app.use("/api", UserRoutes);
+app.use("/api/auth", authRoutes);
 module.exports = app;

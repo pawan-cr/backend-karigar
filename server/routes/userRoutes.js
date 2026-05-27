@@ -70,43 +70,33 @@ router.post("/reviews/business/list", getBusinessReviews);
 
 
 // Authenticated: Reviews routes
+router.use(verifyToken);
+router.use(checkUser);
+
 router.post(
   "/reviews/business/add",
-  verifyToken,
-  checkUser,
   upload.array("review_images", 5),
   addReview,
 );
-router.post("/reviews/me", verifyToken, checkUser, getMyReviews);
-router.post(
-  "/reviews/edit",
-  verifyToken,
-  checkUser,
-  upload.array("review_images", 5),
-  editReview,
-);
-router.post("/reviews/delete", verifyToken, checkUser, deleteReview);
-router.post("/reviews/vote", verifyToken, checkUser, voteReview);
+router.post("/reviews/me", getMyReviews);
+router.post("/reviews/edit", upload.array("review_images", 5), editReview);
+router.post("/reviews/delete", deleteReview);
+router.post("/reviews/vote", voteReview);
 
 //  Favourites routes
-router.post("/favourites/list", verifyToken, checkUser, getMyFavourites);
-router.post("/favourites/save", verifyToken, checkUser, saveFavourite);
-router.post("/favourites/remove", verifyToken, checkUser, removeFavourite);
+router.post("/favourites/list", getMyFavourites);
+router.post("/favourites/save", saveFavourite);
+router.post("/favourites/remove", removeFavourite);
 
 // Recent Views routes
-router.post("/recent-views/list", verifyToken, checkUser, getRecentViews);
-router.post("/recent-views/add", verifyToken, checkUser, addRecentView);
+router.post("/recent-views/list", getRecentViews);
+router.post("/recent-views/add", addRecentView);
 
 // Notifications routes
-router.post("/notifications/list", verifyToken, checkUser, getMyNotifications);
-router.post(
-  "/notifications/read",
-  verifyToken,
-  checkUser,
-  markNotificationRead,
-);
+router.post("/notifications/list", getMyNotifications);
+router.post("/notifications/read", markNotificationRead);
 
 // Reports routes
-router.post("/reports/create", verifyToken, checkUser, createReport);
+router.post("/reports/create", createReport);
 
 module.exports = router;

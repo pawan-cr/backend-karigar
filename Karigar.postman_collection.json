@@ -1,0 +1,961 @@
+{
+  "info": {
+    "name": "Karigar Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "subCategoryId", "value": "" },
+    { "key": "businessId", "value": "" },
+    { "key": "reviewId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "bannerId", "value": "" },
+    { "key": "cityId", "value": "" },
+    { "key": "reportId", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "const res = pm.response.json();",
+          "if (res.token) { pm.collectionVariables.set('token', res.token); console.log('token saved'); }",
+          "if (res.user?._id) pm.collectionVariables.set('userId', res.user._id);",
+          "if (res.category?._id) pm.collectionVariables.set('categoryId', res.category._id);",
+          "if (res.subCategory?._id) pm.collectionVariables.set('subCategoryId', res.subCategory._id);",
+          "if (res.business?._id) pm.collectionVariables.set('businessId', res.business._id);",
+          "if (res.review?._id) pm.collectionVariables.set('reviewId', res.review._id);",
+          "if (res.notification?._id) pm.collectionVariables.set('notificationId', res.notification._id);",
+          "if (res.banner?._id) pm.collectionVariables.set('bannerId', res.banner._id);",
+          "if (res.city?._id || res.data?._id) pm.collectionVariables.set('cityId', res.city?._id || res.data?._id);",
+          "if (res.data?._id && res.data?.reason) pm.collectionVariables.set('reportId', res.data._id);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. AUTH",
+      "item": [
+        {
+          "name": "Login (Firebase token required)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{firebaseToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"admin\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) { pm.collectionVariables.set('token', res.token); console.log('JWT saved:', res.token.substring(0,30)+'...'); }",
+                  "if (res.user?._id) pm.collectionVariables.set('userId', res.user._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "users"]
+            }
+          }
+        },
+        {
+          "name": "Block User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"is_blocked\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users/block",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "users", "block"]
+            }
+          }
+        },
+        {
+          "name": "Change User Role (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"role\": \"businessOwner\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "users", "role"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. CATEGORIES",
+      "item": [
+        {
+          "name": "List Categories (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "list"]
+            }
+          }
+        },
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Restaurants\",\n  \"icon\": \"🍽️\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "create"]
+            }
+          }
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Restaurants Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "update"]
+            }
+          }
+        },
+        {
+          "name": "List SubCategories (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/sub-categories/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "sub-categories", "list"]
+            }
+          }
+        },
+        {
+          "name": "Create SubCategory (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"name\": \"Fast Food\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/sub-categories/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "sub-categories", "create"]
+            }
+          }
+        },
+        {
+          "name": "Update SubCategory (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subCategoryId\": \"{{subCategoryId}}\",\n  \"name\": \"Fast Food Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/sub-categories/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "sub-categories", "update"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. CITIES",
+      "item": [
+        {
+          "name": "List Active Cities (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/cities/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cities", "list"]
+            }
+          }
+        },
+        {
+          "name": "Create City (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ludhiana\",\n  \"state\": \"Punjab\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cities/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cities", "create"]
+            }
+          }
+        },
+        {
+          "name": "Update City (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cityId\": \"{{cityId}}\",\n  \"name\": \"Ludhiana\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cities/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cities", "update"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. BUSINESS",
+      "item": [
+        {
+          "name": "Home Sections (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Ludhiana\",\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/home",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "home"]
+            }
+          }
+        },
+        {
+          "name": "List Approved Businesses (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"{{categoryId}}\",\n  \"city\": \"Ludhiana\",\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "list"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Details (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idOrSlug\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "details"]
+            }
+          }
+        },
+        {
+          "name": "Track Business Action (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"action\": \"view\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/track",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "track"]
+            }
+          }
+        },
+        {
+          "name": "Register Business (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sharma's Kitchen\",\n  \"category\": \"{{categoryId}}\",\n  \"sub_category\": \"{{subCategoryId}}\",\n  \"description\": \"Best food in town\",\n  \"phone\": \"9876543210\",\n  \"whatsapp\": \"9876543210\",\n  \"email\": \"sharma@kitchen.com\",\n  \"address\": \"123 Main Street\",\n  \"city\": \"Ludhiana\",\n  \"state\": \"Punjab\",\n  \"country\": \"India\",\n  \"pincode\": \"141001\",\n  \"images\": [\"https://example.com/image1.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "register"]
+            }
+          }
+        },
+        {
+          "name": "My Businesses (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/owner/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "owner", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Business (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"description\": \"Updated description\",\n  \"phone\": \"9999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "update"]
+            }
+          }
+        },
+        {
+          "name": "Update Timing (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"timing\": [\n    { \"day\": \"monday\", \"open\": \"09:00 AM\", \"close\": \"09:00 PM\" },\n    { \"day\": \"tuesday\", \"open\": \"09:00 AM\", \"close\": \"09:00 PM\" },\n    { \"day\": \"sunday\", \"open\": \"10:00 AM\", \"close\": \"06:00 PM\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/timing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "timing"]
+            }
+          }
+        },
+        {
+          "name": "Delete Business (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "delete"]
+            }
+          }
+        },
+        {
+          "name": "Suspend Business (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"is_active\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "suspend"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. VERIFICATION",
+      "item": [
+        {
+          "name": "List Businesses by Status (Admin/Manager)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"pending\",\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "list"]
+            }
+          }
+        },
+        {
+          "name": "Approve Business (Admin/Manager)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Business (Admin/Manager)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"reason\": \"Incomplete information provided\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Verification History (Admin/Manager)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. REVIEWS",
+      "item": [
+        {
+          "name": "List Business Reviews (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"sort\": \"latest\",\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/business/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "business", "list"]
+            }
+          }
+        },
+        {
+          "name": "Add Review (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"rating\": 4,\n  \"comment\": \"Great service and food!\",\n  \"images\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/business/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "business", "add"]
+            }
+          }
+        },
+        {
+          "name": "My Reviews (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "me"]
+            }
+          }
+        },
+        {
+          "name": "Edit Review (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewId\": \"{{reviewId}}\",\n  \"rating\": 5,\n  \"comment\": \"Updated: Even better than I thought!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/edit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "edit"]
+            }
+          }
+        },
+        {
+          "name": "Delete Review (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewId\": \"{{reviewId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "delete"]
+            }
+          }
+        },
+        {
+          "name": "Vote Review (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewId\": \"{{reviewId}}\",\n  \"type\": \"helpful\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Reply to Review (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewId\": \"{{reviewId}}\",\n  \"message\": \"Thank you for your feedback!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/reply",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "reply"]
+            }
+          }
+        },
+        {
+          "name": "Update Review Status (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewId\": \"{{reviewId}}\",\n  \"status\": \"rejected\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. FAVOURITES",
+      "item": [
+        {
+          "name": "My Favourites (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/favourites/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "favourites", ""]
+            }
+          }
+        },
+        {
+          "name": "Save Favourite (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/favourites/save",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "favourites", "save"]
+            }
+          }
+        },
+        {
+          "name": "Remove Favourite (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/favourites/remove",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "favourites", "remove"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. RECENT VIEWS",
+      "item": [
+        {
+          "name": "Get Recent Views (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/recent-views/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recent-views", ""]
+            }
+          }
+        },
+        {
+          "name": "Add Recent View (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/recent-views/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recent-views", "add"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. NOTIFICATIONS",
+      "item": [
+        {
+          "name": "My Notifications (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "list"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notificationId\": \"{{notificationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "read"]
+            }
+          }
+        },
+        {
+          "name": "Create Notification (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{userId}}\",\n  \"title\": \"Test Notification\",\n  \"message\": \"This is a test notification\",\n  \"type\": \"system\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. ANALYTICS",
+      "item": [
+        {
+          "name": "Admin Dashboard (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Business Analytics (BusinessOwner)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/business",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "business"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. BANNERS",
+      "item": [
+        {
+          "name": "List Active Banners (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", "list"]
+            }
+          }
+        },
+        {
+          "name": "Create Banner (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Summer Sale\",\n  \"image\": \"https://example.com/banner.jpg\",\n  \"redirect_url\": \"https://example.com\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", "create"]
+            }
+          }
+        },
+        {
+          "name": "Update Banner (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bannerId\": \"{{bannerId}}\",\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", "update"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. REPORTS",
+      "item": [
+        {
+          "name": "Create Report (User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\",\n  \"reason\": \"This business has fake information\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/business/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "business", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get All Reports (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"pending\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", ""]
+            }
+          }
+        },
+        {
+          "name": "Update Report Status (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportId\": \"{{reportId}}\",\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Reports (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessId\": \"{{businessId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/business/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "business", "list"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
