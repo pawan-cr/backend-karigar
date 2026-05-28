@@ -12,6 +12,7 @@ const {
   haversineKm,
   resolveCityFilter,
 } = require("../../utils/businessFilters");
+const { deleteFile } = require("../../middleware/upload");
 
 const createSlug = (value) =>
   value
@@ -371,14 +372,12 @@ const updateBusiness = async (req, res) => {
     }
 
     const business = await Business.findById(businessId);
-
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
     }
 
     const ownsBusiness =
       business.owner_id.toString() === req.dbUser._id.toString();
-
     if (!ownsBusiness && req.dbUser.role !== "admin") {
       return res
         .status(403)
@@ -414,6 +413,7 @@ const updateBusiness = async (req, res) => {
 
     // Update logo (single file)
     if (req.files?.logo?.[0]) {
+      if (business.logo) deleteFile(business.logo);
       business.logo = path
         .join("uploads", "logo-images", req.files.logo[0].filename)
         .replace(/\\/g, "/");
@@ -421,13 +421,14 @@ const updateBusiness = async (req, res) => {
 
     // Update business images (append new ones)
     if (req.files?.business_images?.length) {
-      const newImages = req.files.business_images.map((file) =>
+      if (business.business_images?.length) {
+        business.business_images.forEach((img) => deleteFile(img));
+      }
+      business.business_images = req.files.business_images.map((file) =>
         path
           .join("uploads", "business-images", file.filename)
           .replace(/\\/g, "/"),
       );
-
-      business.business_images = [...business.business_images, ...newImages];
     }
 
     // Update slug if name changed
@@ -576,14 +577,12 @@ const updateBusinessImages = async (req, res) => {
     }
 
     const business = await Business.findById(businessId);
-
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
     }
 
     const ownsBusiness =
       business.owner_id.toString() === req.dbUser._id.toString();
-
     if (!ownsBusiness && req.dbUser.role !== "admin") {
       return res
         .status(403)
@@ -592,6 +591,7 @@ const updateBusinessImages = async (req, res) => {
 
     // Update logo (replace old logo)
     if (req.files?.logo?.[0]) {
+      if (busniess.logo) deleteFile(business.logo);
       business.logo = path
         .join("uploads", "logo-images", req.files.logo[0].filename)
         .replace(/\\/g, "/");
@@ -599,16 +599,14 @@ const updateBusinessImages = async (req, res) => {
 
     // Update business images (append new images)
     if (req.files?.business_images?.length) {
-      const newImages = req.files.business_images.map((file) =>
+      if (business.business_images?.length) {
+        business.business_images.forEach((img) => deleteFile(img));
+      }
+      business.business_images = req.files.business_images.map((file) =>
         path
           .join("uploads", "business-images", file.filename)
-          .replace(/\\/g, "/")
+          .replace(/\\/g, "/"),
       );
-
-      business.business_images = [
-        ...business.business_images,
-        ...newImages,
-      ];
     }
 
     await business.save();
@@ -628,7 +626,6 @@ const updateBusinessImages = async (req, res) => {
       message: "Business images updated successfully",
       business,
     });
-
   } catch (error) {
     console.error("[updateBusinessImages]", error);
 
@@ -666,6 +663,12 @@ const deleteBusiness = async (req, res) => {
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
+    }
+
+    // delete image and logo from server
+    if (business.logo) deleteFile(business.logo);
+    if (business.business_images?.length) {
+      business.business_images.forEach((img) => deleteFile(img));
     }
 
     if (req.dbUser.role === "admin") {

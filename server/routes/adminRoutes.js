@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const upload = require("../middleware/upload");
+const { upload, deleteFile } = require("../middleware/upload");
 const {
   verifyToken,
   checkUser,
@@ -57,7 +57,10 @@ const {
   rejectReport,
   getReportById,
 } = require("../api/reports/reportController");
-const { updateReviewStatus, getBusinessReviews } = require("../api/review/reviewController");
+const {
+  updateReviewStatus,
+  getBusinessReviews,
+} = require("../api/review/reviewController");
 const {
   getAdminDashboard,
   getAdminActivityLog,
@@ -65,7 +68,10 @@ const {
 const {
   createNotification,
 } = require("../api/notification/notificationController");
-const { getRecentViews, addRecentView } = require("../api/recentView/recentController");
+const {
+  getRecentViews,
+  addRecentView,
+} = require("../api/recentView/recentController");
 
 // User routes
 // router.post("/users/list", verifyToken, checkUser, isAdmin, getAllUsers);
@@ -190,7 +196,13 @@ router.post(
 );
 router.post("/reports/approve", verifyToken, checkUser, isAdmin, approveReport);
 router.post("/reports/reject", verifyToken, checkUser, isAdmin, rejectReport);
-router.post("/reports/getsingle", verifyToken, checkUser, isAdmin, getReportById);
+router.post(
+  "/reports/getsingle",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  getReportById,
+);
 
 // Reviews routes
 router.post(
@@ -230,7 +242,5 @@ router.post(
 // Recent routes
 router.post("/recent/list", verifyToken, checkUser, getRecentViews);
 router.post("/recents/add", verifyToken, checkUser, addRecentView);
-
-
 
 module.exports = router;

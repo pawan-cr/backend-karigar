@@ -10,59 +10,81 @@ const Verification = require("../verification/verificationModel");
 const {
   logAdminActivity,
 } = require("../adminActivity/adminActivityController");
+const { deleteFile } = require("../../middleware/upload");
 
 const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner"];
 const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin"];
 
-const loginUser = async (req, res) => {
+const registerUser = async (req, res) => {
   try {
     const { uid, email, name, picture, phone_number } = req.user;
     const { role } = req.body;
 
+    // if user is already there
+    const existingUser = await User.findOne({ firebase_uid: uid });
+    if (existingUser) {
+      return res.status(409).json({
+        message: "Account already exits. Please login instead",
+        isNew: false,
+      });
+    }
+
+    let assignedRole = "user";
+    if (role === "businessOwner" && ALLOWED_SIGNUP_ROLES.includes(role)) {
+      assignedRole = role;
+    }
+
+    const newUser = await User.create({
+      firebase_uid: uid,
+      name: name || "",
+      email: email || null,
+      phone: phone_number || null,
+      profile_image: picture || "",
+      role: assignedRole,
+      is_blocked: false,
+    });
+
+    const payload = {
+      _id: newUser._id.toString(),
+      userId: newUser._id.toString(),
+      ui: newUser.firebase_uid,
+      role: newUser.role,
+    };
+
+    const signToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    });
+
+    return res.status(201).json({
+      user: newUser,
+      token: signToken,
+      message: "Account created successfully",
+      isNew: true,
+    });
+  } catch (error) {
+    console.log("[registerUser]", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const loginUser = async (req, res) => {
+  try {
+    const { uid } = req.user;
+
     let user = await User.findOne({ firebase_uid: uid });
 
     if (!user) {
-      let assignedRole = "user";
-      if (role === "businessOwner" && ALLOWED_SIGNUP_ROLES.includes(role)) {
-        assignedRole = role;
-      }
-
-      const newUserPayload = {
-        firebase_uid: uid,
-        name: name || "",
-        email: email || null,
-        phone: phone_number || null,
-        profile_image: picture || "",
-        role: assignedRole,
-        is_blocked: false,
-      };
-
-      const newUser = await User.create(newUserPayload);
-
-      const payload = {
-        _id: newUser._id.toString(),
-        userId: newUser._id.toString(),
-        uid: newUser.firebase_uid,
-        role: newUser.role,
-      };
-
-      const signToken = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-      });
-
-      return res.status(201).json({
-        user: newUser,
-        token: signToken,
-        message: "User created successfully",
+      return res.status(404).json({
+        message: "Account not found. Please register first",
         isNew: true,
       });
     }
 
     if (user.is_blocked) {
-      console.warn("[loginUser] Blocked user attempted login:", {
-        _id: user._id,
-        email: user.email,
-      });
+      // console.warn("[loginUser] Blocked user attempted login:", {
+      //   _id: user._id,
+      //   email: user.email,
+      // });
       return res.status(403).json({
         message: "Your account has been blocked",
         is_blocked: true,
@@ -106,6 +128,10 @@ const updateProfile = async (req, res) => {
     let profile_image;
 
     if (req.file) {
+      // delete old profile image before saving new one
+      if (req.dbUser.profile_image) {
+        deleteFile(req.dbUser.profile_image);
+      }
       profile_image = path
         .join("uploads", "profile-images", req.file.filename)
         .replace(/\\/g, "/");
@@ -442,6 +468,7 @@ const updateFcmToken = async (req, res) => {
 };
 
 module.exports = {
+  registerUser,
   loginUser,
   getMe,
   updateProfile,

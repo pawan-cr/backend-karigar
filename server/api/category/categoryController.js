@@ -5,6 +5,7 @@ const {
   logAdminActivity,
 } = require("../adminActivity/adminActivityController");
 const path = require("node:path");
+const { deleteFile } = require("../../middleware/upload");
 
 const getCategories = async (req, res) => {
   try {
@@ -62,9 +63,15 @@ const updateCategory = async (req, res) => {
     }
 
     const { name, icon, status } = req.body;
-    let category_image;
 
+    const existing = await Category.findById(categoryId);
+    if (!existing) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    let category_image;
     if (req.file) {
+      if (existing.category_image) deleteFile(existing.category_image);
       category_image = path
         .join("uploads", "category-images", req.file.filename)
         .replace(/\\/g, "/");
@@ -82,6 +89,7 @@ const updateCategory = async (req, res) => {
 
     if (!category)
       return res.status(404).json({ message: "Category not found" });
+
     await logAdminActivity(req, {
       action: "update_category",
       resource: "category",
@@ -169,9 +177,17 @@ const updateSubCategory = async (req, res) => {
     }
 
     const { name, icon, status } = req.body;
+
+    // old image path
+    const existing = await SubCategory.findById(subCategoryId);
+    if (!existing) {
+      return res.status(404).json({ message: "Sub category not found" });
+    }
+
     let subcategory_image;
 
     if (req.file) {
+      if (existing.subcategory_image) deleteFile(existing.subcategory_image);
       subcategory_image = path
         .join("uploads", "subcategory-images", req.file.filename)
         .replace(/\\/g, "/");
@@ -189,6 +205,7 @@ const updateSubCategory = async (req, res) => {
 
     if (!subCategory)
       return res.status(404).json({ message: "Sub category not found" });
+
     await logAdminActivity(req, {
       action: "update_sub_category",
       resource: "subCategory",

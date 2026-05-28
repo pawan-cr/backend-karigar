@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
 const Business = require("../business/businessModel");
 const { Review, ReviewVote } = require("./reviewModel");
-const path = require("path")
+const path = require("path");
 const { createUserNotification } = require("../../utils/notify");
+const { deleteFile } = require("../../middleware/upload");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -38,7 +39,6 @@ const refreshBusinessRating = async (businessId) => {
   });
 };
 
-
 const addReview = async (req, res) => {
   try {
     const businessId = req.body.businessId;
@@ -49,7 +49,7 @@ const addReview = async (req, res) => {
       ? req.files.map((file) =>
           path
             .join("uploads", "review-images", file.filename)
-            .replace(/\\/g, "/")
+            .replace(/\\/g, "/"),
         )
       : [];
 
@@ -114,11 +114,6 @@ const addReview = async (req, res) => {
     // Refresh average rating
     await refreshBusinessRating(businessId);
 
-    return res.status(201).json({
-      message: "Review added successfully",
-      review,
-    });
-
     await createUserNotification(
       business.owner_id,
       "New review received",
@@ -126,9 +121,11 @@ const addReview = async (req, res) => {
       "new_review",
     );
 
-    return res
-      .status(201)
-      .json({ message: "Review added successfully", review });
+    return res.status(201).json({
+      message: "Review added successfully",
+      review,
+    });
+
   } catch (error) {
     console.error("[addReview]", error);
 
@@ -154,7 +151,7 @@ const editReview = async (req, res) => {
       ? req.files.map((file) =>
           path
             .join("uploads", "review-images", file.filename)
-            .replace(/\\/g, "/")
+            .replace(/\\/g, "/"),
         )
       : [];
 
@@ -180,12 +177,12 @@ const editReview = async (req, res) => {
     if (rating !== undefined) review.rating = rating;
     if (comment !== undefined) review.comment = comment;
 
-    // Append new images
+    // delete old and append new images
     if (newReviewImages.length) {
-      review.review_images = [
-        ...review.review_images,
-        ...newReviewImages,
-      ];
+      if (review.review_images?.length) {
+        review.review_images.forEach((img) => deleteFile(img));
+      }
+      review.review_images = newReviewImages;
     }
 
     await review.save();
@@ -195,7 +192,6 @@ const editReview = async (req, res) => {
       message: "Review updated successfully",
       review,
     });
-
   } catch (error) {
     console.error("[editReview]", error);
 
@@ -219,6 +215,11 @@ const deleteReview = async (req, res) => {
     });
     if (!review) {
       return res.status(404).json({ message: "Review not found" });
+    }
+
+    //  delete image
+    if (review.review_images?.length) {
+      review.review_images.forEach((img) => deleteFile(img));
     }
 
     await ReviewVote.deleteMany({ review_id: reviewId });

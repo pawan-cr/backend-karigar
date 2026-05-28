@@ -3,6 +3,7 @@ const path = require("path");
 const {
   logAdminActivity,
 } = require("../adminActivity/adminActivityController");
+const { deleteFile } = require("../../middleware/upload");
 
 const getActiveBanners = async (req, res) => {
   try {
@@ -46,13 +47,27 @@ const createBanner = async (req, res) => {
 const updateBanner = async (req, res) => {
   try {
     const { bannerId } = req.body;
-    const banner = await Banner.findByIdAndUpdate(bannerId, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!banner) {
-      return res.status(404).json({ message: "Banner not found" });
+
+    // path of the old image
+    const existing = await Banner.findById(bannerId);
+    if (!existing) return res.status(404).json({ message: "Banner not found" });
+
+    // delete old image if new one uploaded
+    if (req.file && existing.banner_image) {
+      deleteFile(existing.banner_image);
     }
+
+    const banner_image = req.file
+      ? path
+          .join("uploads", "banner-images", req.file.filename)
+          .replace(/\\/g, "/")
+      : undefined;
+
+    const banner = await Banner.findByIdAndUpdate(
+      bannerId,
+      { ...req.body, ...(banner_image && { banner_image }) },
+      { new: true, runValidators: true },
+    );
 
     await logAdminActivity(req, {
       action: "update_banner",

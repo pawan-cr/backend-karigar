@@ -59,4 +59,20 @@ const upload = multer({
   },
 });
 
-module.exports = upload;
+const deleteFile = (fileUrl) => {
+  if (!fileUrl) return;
+
+  try {
+    const relativePath = fileUrl.replace(/^\/uploads\//, "");
+    const fullPath = path.join("server/public/uploads", relativePath);
+
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      console.log("Deleted file:", fullPath);
+    }
+  } catch (error) {
+    console.error("Failed to delete file:", error.message);
+  }
+};
+
+module.exports = { upload, deleteFile };

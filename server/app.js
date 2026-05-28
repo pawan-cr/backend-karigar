@@ -25,7 +25,7 @@ app.use(
   cors({
     origin: [
       "https://uneulogized-steeply-araceli.ngrok-free.dev",
-      "localhost:3000",
+      "http://localhost:3000",
     ],
     credentials: true,
   }),
@@ -33,7 +33,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
-app.use("/uploads", express.static(path.join(__dirname,"public/uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // app.use("/api/auth", authRoutes);
 // app.use("/api/users", userRoutes);
@@ -49,8 +49,8 @@ app.use("/uploads", express.static(path.join(__dirname,"public/uploads")));
 // app.use("/api/banners", bannerRoutes);
 // app.use("/api/cities", cityRoutes);
 
+app.use("/api/auth", authRoutes);
 app.use("/api/admin", AdminRoutes);
 app.use("/api", BusinessRoutes);
 app.use("/api", UserRoutes);
-app.use("/api/auth", authRoutes);
 module.exports = app;

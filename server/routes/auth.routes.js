@@ -7,6 +7,7 @@ const {
   isAdmin,
 } = require("../middleware/auth.middleware");
 const {
+  registerUser,
   loginUser,
   getMe,
   updateProfile,
@@ -16,13 +17,19 @@ const {
   searchAdmin,
   updateFcmToken,
 } = require("../api/auth/auth.controller");
-const upload = require("../middleware/upload")
+const { upload, deleteFile } = require("../middleware/upload");
 
 // For Multer Upload => upload.single("fieldname")
+router.post("/register", verifyToken, registerUser);
 router.post("/login", verifyToken, loginUser);
 router.post("/me", verifyToken, checkUser, getMe);
-router.post("/profile", verifyToken, checkUser, upload.single("profile_image"),updateProfile);
-
+router.post(
+  "/profile",
+  verifyToken,
+  checkUser,
+  upload.single("profile_image"),
+  updateProfile,
+);
 router.post("/users", verifyToken, checkUser, isAdmin, getAllUsers);
 router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
 router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);

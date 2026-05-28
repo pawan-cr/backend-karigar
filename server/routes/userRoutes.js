@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const upload = require("../middleware/upload");
+const { upload, deleteFile } = require("../middleware/upload");
 const {
   verifyToken,
   checkUser,
   optionalCheckUser,
 } = require("../middleware/auth.middleware");
 
-const {
-  loginUser,
-  getMe,
-  updateProfile,
-  updateFcmToken,
-} = require("../api/auth/auth.controller");
+// const {
+//   loginUser,
+//   getMe,
+//   updateProfile,
+//   updateFcmToken,
+// } = require("../api/auth/auth.controller");
 const {
   getHomeSections,
   getApprovedBusinesses,
