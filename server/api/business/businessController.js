@@ -813,21 +813,64 @@ const getHomeSections = async (req, res) => {
   }
 };
 
+// const getBusinessDetails = async (req, res) => {
+//   try {
+//     const { _id, slug } = req.body;
+//     console.log(req.body);
+//     const filter = mongoose.Types.ObjectId.isValid(_id)
+//       ? { _id: id }
+//       : { slug: slug };
+//     console.log(filter);
+
+//     const business = await Business.findById(mongoose.Types.ObjectId(_id))
+//       .populate("category", "name image icon")
+//       .populate("sub_category", "name image icon")
+//       .populate("reviews");
+
+//     if (!business) {
+//       return res.status(404).json({ message: "Business not found" });
+//     }
+
+//     if (req.dbUser) {
+//       await RecentView.findOneAndUpdate(
+//         { user_id: req.dbUser._id, business_id: business._id },
+//         { view_at: new Date() },
+//         { upsert: true, new: true, setDefaultsOnInsert: true },
+//       );
+//     }
+
+//     return res.status(200).json({ business });
+//   } catch (error) {
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const getBusinessDetails = async (req, res) => {
   try {
-    const { idOrSlug } = req.body;
-    const filter = mongoose.Types.ObjectId.isValid(idOrSlug)
-      ? { _id: idOrSlug }
-      : { slug: idOrSlug };
-    console.log(filter);
+    const { _id, slug } = req.body;
 
-    const business = await Business.findOne({
-      ...filter,
-      // ...baseVerifiedFilter(),
-    })
-      .populate("category", "name image icon")
-      .populate("sub_category", "name image icon")
-      .populate("reviews");
+    if (!_id && !slug) {
+      return res
+        .status(400)
+        .json({ message: "Either _id or slug is required" });
+    }
+
+    let business;
+
+    if (_id) {
+      if (!mongoose.Types.ObjectId.isValid(_id)) {
+        return res.status(400).json({ message: "Invalid _id format" });
+      }
+      business = await Business.findById(_id)
+        .populate("category", "name image icon")
+        .populate("sub_category", "name image icon")
+        .populate("reviews");
+    } else {
+      business = await Business.findOne({ slug })
+        .populate("category", "name image icon")
+        .populate("sub_category", "name image icon")
+        .populate("reviews");
+    }
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
@@ -855,6 +898,7 @@ const trackBusinessAction = async (req, res) => {
       call: "call_click",
       whatsapp: "whatsapp_click",
       website: "website_click",
+      maps: "maps_click",
     };
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {

@@ -74,10 +74,10 @@ const {
 } = require("../api/recentView/recentController");
 
 // User routes
-// router.post("/users/list", verifyToken, checkUser, isAdmin, getAllUsers);
-// router.post("/users/search", verifyToken, checkUser, isAdmin, searchAdmin);
-// router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
-// router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
+router.post("/users/list", verifyToken, checkUser, isAdmin, getAllUsers);
+router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
+router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
+router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
 
 // Business routes
 router.post(
@@ -87,9 +87,9 @@ router.post(
   isAdmin,
   suspendBusiness,
 );
-router.post("/list", getApprovedBusinesses);
-router.post("/details", optionalCheckUser, getBusinessDetails);
-router.post("/track", trackBusinessAction);
+// router.post("/list", getApprovedBusinesses);
+// router.post("/details", optionalCheckUser, getBusinessDetails);
+// router.post("/track", trackBusinessAction);
 
 // Verification routes
 router.post(
@@ -122,8 +122,8 @@ router.post(
 );
 
 // Categories routes
-router.post("/categories/list", getCategories);
-router.post("/categories/sub-categories/list", getSubCategories);
+// router.post("/categories/list", getCategories);
+// router.post("/categories/sub-categories/list", getSubCategories);
 
 router.post(
   "/categories/create",
@@ -159,7 +159,7 @@ router.post(
 );
 
 // Cities routes
-router.post("/cities/list", getActiveCities);
+// router.post("/cities/list", getActiveCities);
 router.post("/cities/create", verifyToken, checkUser, isAdmin, createCity);
 router.post("/cities/update", verifyToken, checkUser, isAdmin, updateCity);
 router.post("/cities/getall", verifyToken, checkUser, isAdmin, getAllCities);
@@ -167,7 +167,7 @@ router.post("/cities/getsingle", verifyToken, checkUser, isAdmin, getCityById);
 router.post("/cities/delete", verifyToken, checkUser, isAdmin, deleteCity);
 
 // Banners routes
-router.post("/list", getActiveBanners);
+// router.post("/list", getActiveBanners);
 router.post(
   "/banners/create",
   verifyToken,
@@ -194,15 +194,15 @@ router.post(
   isAdmin,
   getBusinessReports,
 );
-router.post("/reports/approve", verifyToken, checkUser, isAdmin, approveReport);
-router.post("/reports/reject", verifyToken, checkUser, isAdmin, rejectReport);
-router.post(
-  "/reports/getsingle",
-  verifyToken,
-  checkUser,
-  isAdmin,
-  getReportById,
-);
+// router.post("/reports/approve", verifyToken, checkUser, isAdmin, approveReport);
+// router.post("/reports/reject", verifyToken, checkUser, isAdmin, rejectReport);
+// router.post(
+//   "/reports/getsingle",
+//   verifyToken,
+//   checkUser,
+//   isAdmin,
+//   getReportById,
+// );
 
 // Reviews routes
 router.post(
@@ -212,7 +212,7 @@ router.post(
   isAdmin,
   updateReviewStatus,
 );
-router.post("/reviews/business/list", getBusinessReviews);
+// router.post("/reviews/business/list", getBusinessReviews);
 
 // Analytics routes
 router.post(
@@ -240,7 +240,7 @@ router.post(
 );
 
 // Recent routes
-router.post("/recent/list", verifyToken, checkUser, getRecentViews);
-router.post("/recents/add", verifyToken, checkUser, addRecentView);
+// router.post("/recent/list", verifyToken, checkUser, getRecentViews);
+// router.post("/recents/add", verifyToken, checkUser, addRecentView);
 
 module.exports = router;

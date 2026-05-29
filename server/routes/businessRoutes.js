@@ -92,7 +92,7 @@ router.post(
   isBusinessOwner,
   replyToReview,
 );
-router.post("/reviews/business/list", getBusinessReviews);
+// router.post("/reviews/business/list", getBusinessReviews);
 
 // Analytics routes
 router.post(
@@ -104,26 +104,26 @@ router.post(
 );
 
 // Notifications routes
-router.post("/notifications/list", verifyToken, checkUser, getMyNotifications);
-router.post(
-  "/notifications/read",
-  verifyToken,
-  checkUser,
-  markNotificationRead,
-);
+// router.post("/notifications/list", verifyToken, checkUser, getMyNotifications);
+// router.post(
+//   "/notifications/read",
+//   verifyToken,
+//   checkUser,
+//   markNotificationRead,
+// );
 
 // Banners routes 
-router.post("/banners/list", getActiveBanners);
+// router.post("/banners/list", getActiveBanners);
 
 // Category + SubCategory routes
-router.post("/categories/list", getCategories);
-router.post("/categories/sub-categories/list", getSubCategories);
+// router.post("/categories/list", getCategories);
+// router.post("/categories/sub-categories/list", getSubCategories);
 
 // Cities Routes
-router.post("/cities/list", getActiveCities);
+// router.post("/cities/list", getActiveCities);
 
 // Recent Routes
-router.post("/recents/list", verifyToken, checkUser, getRecentViews);
-router.post("/recents/add", verifyToken, checkUser, addRecentView);
+// router.post("/recents/list", verifyToken, checkUser, getRecentViews);
+// router.post("/recents/add", verifyToken, checkUser, addRecentView);
 
 module.exports = router;

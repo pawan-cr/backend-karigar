@@ -30,10 +30,10 @@ router.post(
   upload.single("profile_image"),
   updateProfile,
 );
-router.post("/users", verifyToken, checkUser, isAdmin, getAllUsers);
-router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
-router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
-router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
+// router.post("/users", verifyToken, checkUser, isAdmin, getAllUsers);
+// router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
+// router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
+// router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
 
 router.post("/fcm-token", verifyToken, checkUser, updateFcmToken);
 

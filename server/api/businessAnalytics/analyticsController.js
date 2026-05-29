@@ -112,33 +112,105 @@ const getAdminActivityLog = async (req, res) => {
   }
 };
 
+// const getBusinessAnalytics = async (req, res) => {
+//   try {
+//     const { businessId } = req.body;
+//     const business = await Business.findById(businessId);
+
+//     if (!business) {
+//       return res.status(404).json({ message: "Business not found" });
+//     }
+//     if (
+//       business.owner_id.toString() !== req.dbUser._id.toString() &&
+//       req.dbUser.role !== "admin"
+//     ) {
+//       return res.status(403).json({ message: "Not allowed to view analytics" });
+//     }
+
+//     const analytics = await Analytics.find({ business_id: businessId }).sort({
+//       date: -1,
+//     });
+
+//     return res.status(200).json({
+//       business: {
+//         views: business.views,
+//         call_click: business.call_click,
+//       whatsapp_click: business.whatsapp_click,
+//         website_click: business.website_click,
+//       },
+//       analytics,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const getBusinessAnalytics = async (req, res) => {
   try {
-    const { businessId } = req.body;
-    const business = await Business.findById(businessId);
+    // fetch all businesses owned by this user
+    const businesses = await Business.find({ owner_id: req.dbUser._id }).select(
+      "name slug logo views call_click whatsapp_click website_click maps_click rating total_reviews verified_status is_active",
+    );
 
-    if (!business) {
-      return res.status(404).json({ message: "Business not found" });
-    }
-    if (
-      business.owner_id.toString() !== req.dbUser._id.toString() &&
-      req.dbUser.role !== "admin"
-    ) {
-      return res.status(403).json({ message: "Not allowed to view analytics" });
+    if (!businesses.length) {
+      return res.status(404).json({ message: "No businesses found" });
     }
 
-    const analytics = await Analytics.find({ business_id: businessId }).sort({
-      date: -1,
+    const businessIds = businesses.map((b) => b._id);
+
+    // fetch daily analytics for all their businesses
+    const analytics = await Analytics.find({
+      business_id: { $in: businessIds },
+    }).sort({ date: -1 });
+
+    const analyticsByBusiness = {};
+    analytics.forEach((entry) => {
+      const id = entry.business_id.toString();
+      if (!analyticsByBusiness[id]) analyticsByBusiness[id] = [];
+      analyticsByBusiness[id].push(entry);
     });
 
-    return res.status(200).json({
-      business: {
-        views: business.views,
-        call_click: business.call_click,
-      whatsapp_click: business.whatsapp_click,
-        website_click: business.website_click,
+    const businessSummaries = businesses.map((b) => ({
+      businessId: b._id,
+      name: b.name,
+      slug: b.slug,
+      logo: b.logo,
+      verified_status: b.verified_status,
+      is_active: b.is_active,
+      rating: b.rating,
+      total_reviews: b.total_reviews,
+      totals: {
+        views: b.views,
+        call_click: b.call_click,
+        whatsapp_click: b.whatsapp_click,
+        website_click: b.website_click,
+        maps_click: b.maps_click || 0,
       },
-      analytics,
+      daily_analytics: analyticsByBusiness[b._id.toString()] || [],
+    }));
+
+    const overall = businesses.reduce(
+      (acc, b) => {
+        acc.views += b.views || 0;
+        acc.call_click += b.call_click || 0;
+        acc.whatsapp_click += b.whatsapp_click || 0;
+        acc.website_click += b.website_click || 0;
+        acc.maps_click += b.maps_click || 0;
+        return acc;
+      },
+      {
+        views: 0,
+        call_click: 0,
+        whatsapp_click: 0,
+        website_click: 0,
+        maps_click: 0,
+      },
+    );
+
+    return res.status(200).json({
+      total_businesses: businesses.length,
+      overall_totals: overall,
+      businesses: businessSummaries,
     });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
