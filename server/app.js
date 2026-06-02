@@ -7,6 +7,8 @@ const authRoutes = require("./routes/auth.routes");
 const AdminRoutes = require("./routes/adminRoutes");
 const BusinessRoutes = require("./routes/businessRoutes");
 const UserRoutes = require("./routes/userRoutes");
+const twilioRoutes = require("./routes/twilio.routes");
+const searchRoutes = require("./search/searchRoutes");
 
 // const userRoutes = require("./routes/user.routes");
 // const businessRoutes = require("./routes/business.routes");
@@ -24,7 +26,7 @@ const UserRoutes = require("./routes/userRoutes");
 app.use(
   cors({
     origin: [
-      "https://uneulogized-steeply-araceli.ngrok-free.dev",
+      "https://finalist-anaconda-majestic.ngrok-free.dev",
       "http://localhost:3000",
     ],
     credentials: true,
@@ -50,7 +52,9 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 // app.use("/api/cities", cityRoutes);
 
 app.use("/api/auth", authRoutes);
+app.use("/api", searchRoutes);
 app.use("/api/admin", AdminRoutes);
+app.use("/api/twilio", twilioRoutes);
 app.use("/api", BusinessRoutes);
 app.use("/api", UserRoutes);
 module.exports = app;

@@ -8,6 +8,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+SEARCH_SYSTEM.md
 
 # uploads (optional if you don’t want images tracked)
 # uploads/

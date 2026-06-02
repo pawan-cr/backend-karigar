@@ -136,8 +136,8 @@ const businessSchema = new mongoose.Schema(
 businessSchema.index({
   name: "text",
   description: "text",
-  services: "text",
   city: "text",
+  address: "text",
 });
 
 businessSchema.index({ owner_id: 1 });

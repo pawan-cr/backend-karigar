@@ -15,12 +15,6 @@ const adminActivitySchema = new mongoose.Schema(
     },
     resource: {
       type: String,
-      required: true,
-      trim: true,
-    },
-    resource_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "resource_model",
     },
     resource_model: {
       type: String,

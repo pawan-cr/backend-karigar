@@ -13,8 +13,8 @@ const {
   getAllUsers,
   blockUser,
   changeUserRole,
-  searchAdmin,
 } = require("../api/auth/auth.controller");
+const { adminSearch } = require("../search/searchController");
 
 const {
   suspendBusiness,
@@ -77,7 +77,7 @@ const {
 router.post("/users/list", verifyToken, checkUser, isAdmin, getAllUsers);
 router.post("/users/block", verifyToken, checkUser, isAdmin, blockUser);
 router.post("/users/role", verifyToken, checkUser, isAdmin, changeUserRole);
-router.post("/search", verifyToken, checkUser, isAdmin, searchAdmin);
+router.post("/search", verifyToken, checkUser, isAdmin, adminSearch);
 
 // Business routes
 router.post(
