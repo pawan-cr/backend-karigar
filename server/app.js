@@ -9,6 +9,7 @@ const BusinessRoutes = require("./routes/businessRoutes");
 const UserRoutes = require("./routes/userRoutes");
 const twilioRoutes = require("./routes/twilio.routes");
 const searchRoutes = require("./search/searchRoutes");
+const phoneRoutes = require("./routes/phoneVerificationRoutes")
 
 // const userRoutes = require("./routes/user.routes");
 // const businessRoutes = require("./routes/business.routes");
@@ -55,6 +56,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", searchRoutes);
 app.use("/api/admin", AdminRoutes);
 app.use("/api/twilio", twilioRoutes);
+app.use("/api/bpv", phoneRoutes); //bpv = business phone verification 
 app.use("/api", BusinessRoutes);
 app.use("/api", UserRoutes);
 module.exports = app;
