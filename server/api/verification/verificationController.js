@@ -53,8 +53,26 @@ const getVerificationBusinesses = async (req, res) => {
 
     const total = await Business.countDocuments(filter);
 
+    let businessesData = businesses.map(b => b.toObject());
+
+    if (verificationStatus === "pending") {
+      businessesData = await Promise.all(
+        businessesData.map(async (b) => {
+          const latestPending = await Verification.findOne({
+            business_id: b._id,
+            action: "pending",
+          }).sort({ createdAt: -1 });
+
+          if (latestPending && latestPending.previous_state) {
+            b.previous_state = latestPending.previous_state;
+          }
+          return b;
+        })
+      );
+    }
+
     return res.status(200).json({
-      businesses,
+      businesses: businessesData,
       pagination: {
         total,
         page: Number(page),

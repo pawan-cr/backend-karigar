@@ -6,22 +6,18 @@ const AccessToken = twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
-
 function generateIdentity() {
   const suffix = Math.random().toString(36).substring(2, 7);
   return `client_${Date.now()}_${suffix}`;
 }
 
-
 function isValidPhoneNumber(number) {
   return /^\+[1-9]\d{1,14}$/.test(number);
 }
 
-
 function isValidClientIdentity(identity) {
   return /^[a-zA-Z0-9_\-]{1,128}$/.test(identity);
 }
-
 
 function normalizePhoneNumber(value) {
   if (typeof value !== "string") {
@@ -48,7 +44,8 @@ function sendTwimlError(res, statusCode, message) {
   const twiml = new VoiceResponse();
   twiml.say(message);
   res.set("Content-Type", "text/xml");
-  return res.status(statusCode).send(twiml.toString());
+  // Twilio requires HTTP 200 to read TwiML messages; non-200 causes a generic application error
+  return res.status(200).send(twiml.toString());
 }
 
 function getTwilioVerifyCredentials() {
@@ -69,7 +66,9 @@ function getTwilioVerifyCredentials() {
     ["TWILIO_TEJAS", TWILIO_TEJAS],
     ["TWILIO_AUTH_TOKEN", TWILIO_AUTH_TOKEN],
   ].filter(([, token], index, allTokens) => {
-    return token && allTokens.findIndex(([, value]) => value === token) === index;
+    return (
+      token && allTokens.findIndex(([, value]) => value === token) === index
+    );
   });
 
   return { accountSid, tokens, verifyServiceSid: TWILIO_VERIFY_SERVICE_SID };
@@ -113,7 +112,6 @@ async function validateOtpAuthType(req, res, phone, options = {}) {
 
   return true;
 }
-
 
 const getToken = (req, res) => {
   try {
@@ -186,7 +184,7 @@ const handleVoice = (req, res) => {
     if (!TWILIO_PHONE_NUMBER) {
       console.error("[handleVoice] TWILIO_PHONE_NUMBER env var is not set");
       return res
-        .status(500)
+        .status(200)
         .type("text/xml")
         .send(
           "<Response><Say>Server configuration error. Please contact support.</Say></Response>",
@@ -231,13 +229,12 @@ const handleVoice = (req, res) => {
     // Return a valid TwiML error response so Twilio doesn't retry indefinitely
     res.set("Content-Type", "text/xml");
     return res
-      .status(500)
+      .status(200)
       .send(
         "<Response><Say>An internal error occurred. Please try again later.</Say></Response>",
       );
   }
 };
-
 
 const sendOtp = async (req, res) => {
   try {
@@ -246,15 +243,20 @@ const sendOtp = async (req, res) => {
       TWILIO_PHONE_VERIFY_SID,
       TWILIO_AUTH_TOKEN,
       TWILIO_PHONE_VERIFY,
-      TWILIO_TEJAAS, 
-      TWILIO_TEJAS, 
+      TWILIO_TEJAAS,
+      TWILIO_TEJAS,
       TWILIO_VERIFY_SERVICE_SID,
     } = process.env;
 
-    const twilioAccountSid = TWILIO_PHONE_VERIFY_SID || TWILIO_ACCOUNT_SID; 
+    const twilioAccountSid = TWILIO_PHONE_VERIFY_SID || TWILIO_ACCOUNT_SID;
 
     const twilioAuthToken =
       TWILIO_PHONE_VERIFY || TWILIO_TEJAAS || TWILIO_TEJAS || TWILIO_AUTH_TOKEN;
+
+    console.log(`[sendOtp] Using Account SID: ${twilioAccountSid}, Verify Service SID: ${TWILIO_VERIFY_SERVICE_SID}`);
+    if (TWILIO_PHONE_VERIFY_SID) {
+      console.log(`[sendOtp] Note: TWILIO_PHONE_VERIFY_SID is overriding TWILIO_ACCOUNT_SID`);
+    }
 
     if (!twilioAccountSid || !twilioAuthToken || !TWILIO_VERIFY_SERVICE_SID) {
       console.error("[sendOtp] Missing Twilio Verify configuration");
@@ -292,15 +294,12 @@ const sendOtp = async (req, res) => {
   }
 };
 
-
 const verifyOtp = async (req, res) => {
   try {
-    const {
-      JWT_SECRET,
-      JWT_EXPIRES_IN,
-    } = process.env;
+    const { JWT_SECRET, JWT_EXPIRES_IN } = process.env;
 
-    const { accountSid, tokens, verifyServiceSid } = getTwilioVerifyCredentials();
+    const { accountSid, tokens, verifyServiceSid } =
+      getTwilioVerifyCredentials();
 
     if (!accountSid || tokens.length === 0 || !verifyServiceSid) {
       console.error("[verifyOtp] Missing Twilio Verify configuration");
@@ -321,7 +320,8 @@ const verifyOtp = async (req, res) => {
 
     const isAuthTypeValid = await validateOtpAuthType(req, res, phone, {
       loginNotFoundMessage: "No account found with this phone number.",
-      registerExistsMessage: "An account with this phone number already exists.",
+      registerExistsMessage:
+        "An account with this phone number already exists.",
     });
     if (!isAuthTypeValid) {
       return;

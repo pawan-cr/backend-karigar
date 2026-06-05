@@ -13,8 +13,8 @@ const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin"];
 
 const registerUser = async (req, res) => {
   try {
-    const { uid, email, name, picture, phone_number } = req.user;
-    const { role } = req.body;
+    const { uid, email, name: tokenName, picture, phone_number } = req.user;
+    const { role, phone, name } = req.body;
 
     // if user is already there
     const existingUser = await User.findOne({ firebase_uid: uid });
@@ -30,15 +30,60 @@ const registerUser = async (req, res) => {
       assignedRole = role;
     }
 
-    const newUser = await User.create({
+    let finalPhone = phone || phone_number || undefined;
+    if (finalPhone && typeof finalPhone === "string") {
+      finalPhone = finalPhone.trim();
+      if (finalPhone && !finalPhone.startsWith("+")) {
+        if (finalPhone.length === 10 && /^\d+$/.test(finalPhone)) {
+          finalPhone = "+91" + finalPhone;
+        } else {
+          finalPhone = "+" + finalPhone;
+        }
+      }
+    }
+    const finalName = name || tokenName || "";
+
+    const userObj = {
       firebase_uid: uid,
-      name: name || "",
-      email: email || null,
-      phone: phone_number || null,
+      name: finalName,
       profile_image: picture || "",
       role: assignedRole,
       is_blocked: false,
-    });
+    };
+
+    if (email) {
+      userObj.email = email;
+    }
+    if (finalPhone) {
+      userObj.phone = finalPhone;
+    }
+
+    let newUser;
+    try {
+      newUser = await User.create(userObj);
+    } catch (dbError) {
+      // MongoDB failed — clean up the Firebase user so they can retry cleanly
+      console.error(
+        "[registerUser] MongoDB create failed, rolling back Firebase user:",
+        dbError,
+      );
+
+      try {
+        await auth.deleteUser(uid);
+        console.log(`[registerUser] Firebase user ${uid} deleted successfully`);
+      } catch (firebaseDeleteError) {
+        // Firebase user might not exist or already deleted — log but don't throw
+        console.error(
+          "[registerUser] Failed to rollback Firebase user:",
+          firebaseDeleteError.message,
+        );
+      }
+
+      return res.status(500).json({
+        message:
+          "Registration failed. Your account has been rolled back — please try again.",
+      });
+    }
 
     const payload = {
       _id: newUser._id.toString(),

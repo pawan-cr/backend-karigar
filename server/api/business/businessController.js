@@ -386,6 +386,50 @@ const updateBusiness = async (req, res) => {
 
     const currentName = business.name;
 
+    let previousStateSnapshot = null;
+    const shouldResetVerification = ownsBusiness && business.verified_status !== "pending";
+
+    if (shouldResetVerification) {
+      previousStateSnapshot = {};
+      const fieldsToSnapshot = [
+        "name",
+        "category",
+        "sub_category",
+        "description",
+        "phone",
+        "whatsapp",
+        "website",
+        "email",
+        "address",
+        "city",
+        "state",
+        "country",
+        "pincode",
+        "coordinates",
+        "services",
+        "logo",
+        "business_images",
+        "timing",
+      ];
+
+      fieldsToSnapshot.forEach((field) => {
+        if (business[field] !== undefined) {
+          previousStateSnapshot[field] = JSON.parse(JSON.stringify(business[field]));
+        }
+      });
+
+      if (business.category) {
+        previousStateSnapshot.category = business.category.toString();
+        const cat = await mongoose.model("Category").findById(business.category);
+        if (cat) previousStateSnapshot.category_name = cat.name;
+      }
+      if (business.sub_category) {
+        previousStateSnapshot.sub_category = business.sub_category.toString();
+        const subCat = await mongoose.model("SubCategory").findById(business.sub_category);
+        if (subCat) previousStateSnapshot.sub_category_name = subCat.name;
+      }
+    }
+
     const allowedFields = [
       "name",
       "category",
@@ -437,7 +481,7 @@ const updateBusiness = async (req, res) => {
     }
 
     // Reset verification
-    if (ownsBusiness && business.verified_status !== "pending") {
+    if (shouldResetVerification) {
       business.verified_status = "pending";
       business.verified_by = undefined;
       business.reject_reason = undefined;
@@ -446,6 +490,7 @@ const updateBusiness = async (req, res) => {
         business_id: business._id,
         action: "pending",
         reason: "Business updated by owner",
+        previous_state: previousStateSnapshot,
       });
     }
 

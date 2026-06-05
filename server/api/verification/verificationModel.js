@@ -22,6 +22,9 @@ const verificationSchema = new mongoose.Schema(
     reason: {
       type: String,
     },
+    previous_state: {
+      type: mongoose.Schema.Types.Mixed,
+    },
   },
   { timestamps: true },
 );
