@@ -465,14 +465,12 @@ const updateBusiness = async (req, res) => {
 
     // Update business images (append new ones)
     if (req.files?.business_images?.length) {
-      if (business.business_images?.length) {
-        business.business_images.forEach((img) => deleteFile(img));
-      }
-      business.business_images = req.files.business_images.map((file) =>
+      const newImages = req.files.business_images.map((file) =>
         path
           .join("uploads", "business-images", file.filename)
           .replace(/\\/g, "/"),
       );
+      business.business_images = [...(business.business_images || []), ...newImages];
     }
 
     // Update slug if name changed
@@ -636,7 +634,7 @@ const updateBusinessImages = async (req, res) => {
 
     // Update logo (replace old logo)
     if (req.files?.logo?.[0]) {
-      if (busniess.logo) deleteFile(business.logo);
+      if (business.logo) deleteFile(business.logo);
       business.logo = path
         .join("uploads", "logo-images", req.files.logo[0].filename)
         .replace(/\\/g, "/");
@@ -644,14 +642,12 @@ const updateBusinessImages = async (req, res) => {
 
     // Update business images (append new images)
     if (req.files?.business_images?.length) {
-      if (business.business_images?.length) {
-        business.business_images.forEach((img) => deleteFile(img));
-      }
-      business.business_images = req.files.business_images.map((file) =>
+      const newImages = req.files.business_images.map((file) =>
         path
           .join("uploads", "business-images", file.filename)
           .replace(/\\/g, "/"),
       );
+      business.business_images = [...(business.business_images || []), ...newImages];
     }
 
     await business.save();

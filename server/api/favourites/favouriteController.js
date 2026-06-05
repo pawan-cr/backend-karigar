@@ -17,9 +17,12 @@ const getMyFavourites = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      favourites: favourites.filter((f) => f.business_id),
-    });
+    // Return flat array of business objects (filter out null if business was deleted/deactivated)
+    const businesses = favourites
+      .filter((f) => f.business_id)
+      .map((f) => f.business_id);
+
+    return res.status(200).json({ favourites: businesses });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
   }

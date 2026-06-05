@@ -14,7 +14,7 @@ const {
 const router = express.Router();
 
 router.post("/admin/search", verifyToken, checkUser, isAdmin, adminSearch);
-router.post("/search", verifyToken, checkUser, userSearch);
+router.post("/search", userSearch);
 router.post(
   "/owner/search",
   verifyToken,
