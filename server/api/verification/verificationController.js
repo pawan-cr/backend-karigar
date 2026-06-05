@@ -126,7 +126,7 @@ const approveBusiness = async (req, res) => {
       resource: "business",
       resource_id: business._id,
       resource_model: "Business",
-      details: { businessId, action: "approved" },
+      details: { businessId, businessName: business.name, action: "approved" },
     });
 
     return res.status(200).json({
@@ -183,7 +183,7 @@ const rejectBusiness = async (req, res) => {
       resource: "business",
       resource_id: business._id,
       resource_model: "Business",
-      details: { businessId, reason, action: "rejected" },
+      details: { businessId, businessName: business.name, reason, action: "rejected" },
     });
 
     return res.status(200).json({

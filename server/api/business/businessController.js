@@ -502,7 +502,7 @@ const updateBusiness = async (req, res) => {
         resource: "business",
         resource_id: business._id,
         resource_model: "Business",
-        details: { businessId, updatedBy: "admin" },
+        details: { businessId, businessName: business.name, updatedBy: "admin" },
       });
     }
 
@@ -558,7 +558,7 @@ const updateBusinessTiming = async (req, res) => {
         resource: "business",
         resource_id: business._id,
         resource_model: "Business",
-        details: { businessId },
+        details: { businessId, businessName: business.name },
       });
     }
 
@@ -663,7 +663,7 @@ const updateBusinessImages = async (req, res) => {
         resource: "business",
         resource_id: business._id,
         resource_model: "Business",
-        details: { businessId },
+        details: { businessId, businessName: business.name },
       });
     }
 
@@ -722,7 +722,7 @@ const deleteBusiness = async (req, res) => {
         resource: "business",
         resource_id: business._id,
         resource_model: "Business",
-        details: { businessId },
+        details: { businessId, businessName: business.name },
       });
     }
 
@@ -981,9 +981,42 @@ const trackBusinessAction = async (req, res) => {
   }
 };
 
+const getAdminBusinesses = async (req, res) => {
+  try {
+    const { limit = 200, page = 1, search } = req.body;
+    const filter = { verified_status: "verified" };
+
+    if (search) {
+      filter.$text = { $search: search };
+    }
+
+    const businesses = await Business.find(filter)
+      .populate("owner_id", "name email phone")
+      .populate("category", "name image icon")
+      .populate("sub_category", "name image icon")
+      .sort({ createdAt: -1 })
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+
+    const total = await Business.countDocuments(filter);
+
+    return res.status(200).json({
+      businesses,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        pages: Math.ceil(total / Number(limit)) || 1,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const suspendBusiness = async (req, res) => {
   try {
-    const { businessId, is_active } = req.body;
+    const { businessId, is_active, reason } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({ message: "Invalid business id" });
@@ -992,14 +1025,30 @@ const suspendBusiness = async (req, res) => {
       return res.status(400).json({ message: "is_active must be boolean" });
     }
 
+    const updateFields = { is_active };
+    if (!is_active) {
+      updateFields.suspend_reason = reason || "Suspended by admin";
+    } else {
+      updateFields.suspend_reason = ""; // clear it when activating
+    }
+
     const business = await Business.findByIdAndUpdate(
       businessId,
-      { is_active },
+      { $set: updateFields },
       { new: true },
     );
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
     }
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      action: is_active ? "reactivate_business" : "suspend_business",
+      resource: "business",
+      resource_id: business._id,
+      resource_model: "Business",
+      details: { businessId, businessName: business.name, reason },
+    });
 
     return res.status(200).json({
       message: `Business ${is_active ? "activated" : "suspended"} successfully`,
@@ -1022,4 +1071,5 @@ module.exports = {
   getBusinessDetails,
   trackBusinessAction,
   suspendBusiness,
+  getAdminBusinesses,
 };

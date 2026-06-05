@@ -21,6 +21,7 @@ const {
   getApprovedBusinesses,
   getBusinessDetails,
   trackBusinessAction,
+  getAdminBusinesses,
 } = require("../api/business/businessController");
 const {
   getVerificationBusinesses,
@@ -87,7 +88,13 @@ router.post(
   isAdmin,
   suspendBusiness,
 );
-// router.post("/list", getApprovedBusinesses);
+router.post(
+  "/business/list",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  getAdminBusinesses,
+);
 // router.post("/details", optionalCheckUser, getBusinessDetails);
 // router.post("/track", trackBusinessAction);
 

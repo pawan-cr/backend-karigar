@@ -103,6 +103,9 @@ const businessSchema = new mongoose.Schema(
     reject_reason: {
       type: String,
     },
+    suspend_reason: {
+      type: String,
+    },
     is_active: {
       type: Boolean,
       default: true,
