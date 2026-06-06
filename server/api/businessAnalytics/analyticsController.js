@@ -207,12 +207,95 @@ const getBusinessAnalytics = async (req, res) => {
       },
     );
 
+    // Fetch reviews for all businesses owned by this user
+    const reviews = await Review.find({ business_id: { $in: businessIds } })
+      .populate("user_id", "name profile_image")
+      .populate("business_id", "name")
+      .sort({ createdAt: -1 });
+
+    const totalReviews = reviews.length;
+    const distributionMap = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let sumRatings = 0;
+    reviews.forEach((r) => {
+      const stars = Math.round(r.rating);
+      if (distributionMap[stars] !== undefined) {
+        distributionMap[stars]++;
+      }
+      sumRatings += r.rating;
+    });
+
+    const overallRating = totalReviews > 0 ? Number((sumRatings / totalReviews).toFixed(1)) : 0;
+
+    const distribution = [
+      { stars: 5, count: distributionMap[5], label: "Superb" },
+      { stars: 4, count: distributionMap[4], label: "Good" },
+      { stars: 3, count: distributionMap[3], label: "Average" },
+      { stars: 2, count: distributionMap[2], label: "Below Avg" },
+      { stars: 1, count: distributionMap[1], label: "Poor" },
+    ];
+
+    const ratingBreakdown = {
+      overall: overallRating,
+      totalReviews,
+      distribution,
+    };
+
+    const getInitials = (name) => {
+      if (!name) return "U";
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    };
+
+    const getAvatarColor = (name) => {
+      if (!name) return "#7A7BA0";
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const colors = ["#e2b84d", "#a347a3", "#4ea3a3", "#a34e4e", "#4ea34e", "#4e4ea3"];
+      return colors[Math.abs(hash) % colors.length];
+    };
+
+    const formatTimeAgo = (date) => {
+      const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+      if (seconds < 60) return "just now";
+      let interval = Math.floor(seconds / 31536000);
+      if (interval >= 1) return interval + (interval === 1 ? " year ago" : " years ago");
+      interval = Math.floor(seconds / 2592000);
+      if (interval >= 1) return interval + (interval === 1 ? " month ago" : " months ago");
+      interval = Math.floor(seconds / 86400);
+      if (interval >= 1) return interval + (interval === 1 ? " day ago" : " days ago");
+      interval = Math.floor(seconds / 3600);
+      if (interval >= 1) return interval + (interval === 1 ? " hour ago" : " hours ago");
+      interval = Math.floor(seconds / 60);
+      if (interval >= 1) return interval + (interval === 1 ? " minute ago" : " minutes ago");
+      return "just now";
+    };
+
+    const recentActivities = reviews.map((r) => ({
+      id: r._id.toString(),
+      userName: r.user_id?.name || "User",
+      userInitials: getInitials(r.user_id?.name),
+      avatarColor: getAvatarColor(r.user_id?.name),
+      rating: r.rating,
+      text: r.comment,
+      timestamp: formatTimeAgo(r.createdAt),
+      businessName: r.business_id?.name || "My Business",
+    }));
+
     return res.status(200).json({
       total_businesses: businesses.length,
       overall_totals: overall,
       businesses: businessSummaries,
+      ratingBreakdown,
+      recentActivities,
     });
   } catch (error) {
+    console.error("[getBusinessAnalytics]", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
