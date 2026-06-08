@@ -7,12 +7,14 @@ const RecentView = require("../recentView/recentModel");
 const {
   logAdminActivity,
 } = require("../adminActivity/adminActivityController");
+const { Review } = require("../review/reviewModel");
 const {
   isBusinessOpenNow,
   haversineKm,
   resolveCityFilter,
 } = require("../../utils/businessFilters");
 const { deleteFile } = require("../../middleware/upload");
+const { notifyAdmins } = require("../../utils/notify");
 
 const createSlug = (value) =>
   value
@@ -256,6 +258,12 @@ const registerBusiness = async (req, res) => {
       business_id: business._id,
       action: "pending",
     });
+
+    await notifyAdmins(
+      "New Business Registered",
+      `A new business "${business.name}" has been registered and is pending verification.`,
+      "new_business"
+    );
 
     return res.status(201).json({
       message: "Business registered successfully and sent for verification",
@@ -816,7 +824,7 @@ const getHomeSections = async (req, res) => {
       { path: "sub_category", select: "name image icon" },
     ];
 
-    const [topRated, newlyVerified, trendingRaw] = await Promise.all([
+    const [topRated, newlyVerified, trendingRaw, totalBusinesses, totalReviews, ratingStats] = await Promise.all([
       Business.find(filter)
         .populate(populateOpts)
         .sort({ rating: -1, total_reviews: -1 })
@@ -829,7 +837,15 @@ const getHomeSections = async (req, res) => {
         .populate(populateOpts)
         .sort({ views: -1 })
         .limit(sectionLimit * 3),
+      Business.countDocuments(filter),
+      Review.countDocuments({ status: "approved" }),
+      Business.aggregate([
+        { $match: filter },
+        { $group: { _id: null, avgRating: { $avg: "$rating" } } }
+      ])
     ]);
+
+    const avgRating = ratingStats.length > 0 ? Number(ratingStats[0].avgRating.toFixed(1)) : 0;
 
     let trending = trendingRaw;
     if (lat !== undefined && lng !== undefined) {
@@ -848,6 +864,11 @@ const getHomeSections = async (req, res) => {
         newlyVerified,
         trending,
       },
+      stats: {
+        businesses: totalBusinesses,
+        reviews: totalReviews,
+        avgRating
+      }
     });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });

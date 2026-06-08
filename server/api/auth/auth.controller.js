@@ -81,7 +81,7 @@ const registerUser = async (req, res) => {
 
       return res.status(500).json({
         message:
-          "Registration failed. Your account has been rolled back — please try again.",
+          "Registration failed. Try again.",
       });
     }
 
@@ -165,7 +165,7 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, email, phone } = req.body;
     let profile_image;
 
     if (req.file) {
@@ -181,6 +181,20 @@ const updateProfile = async (req, res) => {
     const updateData = {};
 
     if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email.trim();
+    if (phone !== undefined) {
+      let finalPhone = phone.trim();
+      if (finalPhone) {
+        if (!finalPhone.startsWith("+")) {
+          if (finalPhone.length === 10 && /^\d+$/.test(finalPhone)) {
+            finalPhone = "+91" + finalPhone;
+          } else {
+            finalPhone = "+" + finalPhone;
+          }
+        }
+        updateData.phone = finalPhone;
+      }
+    }
     if (profile_image !== undefined) updateData.profile_image = profile_image;
 
     const user = await User.findByIdAndUpdate(req.dbUser._id, updateData, {
@@ -198,6 +212,10 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("[updateProfile]", error);
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ message: `An account with this ${field} already exists.` });
+    }
     return res.status(500).json({ message: "Internal server error" });
   }
 };

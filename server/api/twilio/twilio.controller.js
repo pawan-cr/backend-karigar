@@ -206,7 +206,7 @@ const handleVoice = (req, res) => {
 
     if (phoneTo) {
       // ---- Phone number call ----
-      const dial = twiml.dial({ callerId: TWILIO_PHONE_NUMBER });
+      const dial = twiml.dial({ callerId: TWILIO_PHONE_NUMBER, answerOnBridge: true });
       dial.number(phoneTo);
     } else {
       // ---- Browser-to-browser (client) call ----
@@ -218,7 +218,7 @@ const handleVoice = (req, res) => {
         );
       }
 
-      const dial = twiml.dial();
+      const dial = twiml.dial({ answerOnBridge: true });
       dial.client(trimmedTo);
     }
 
@@ -441,4 +441,34 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-module.exports = { getToken, handleVoice, sendOtp, verifyOtp };
+const getCallStatus = async (req, res) => {
+  try {
+    const { callSid } = req.body;
+    if (!callSid) {
+      return res.status(400).json({ message: "Call SID is required" });
+    }
+
+    const {
+      TWILIO_ACCOUNT_SID,
+      TWILIO_PHONE_VERIFY_SID,
+      TWILIO_AUTH_TOKEN,
+      TWILIO_PHONE_VERIFY,
+      TWILIO_TEJAAS,
+      TWILIO_TEJAS,
+    } = process.env;
+
+    const twilioAccountSid = TWILIO_PHONE_VERIFY_SID || TWILIO_ACCOUNT_SID;
+    const twilioAuthToken =
+      TWILIO_PHONE_VERIFY || TWILIO_TEJAAS || TWILIO_TEJAS || TWILIO_AUTH_TOKEN;
+
+    const client = twilio(twilioAccountSid, twilioAuthToken);
+    const call = await client.calls(callSid).fetch();
+
+    return res.status(200).json({ status: call.status });
+  } catch (error) {
+    console.error("[getCallStatus] error:", error);
+    return res.status(500).json({ message: error.message || "Failed to fetch call status" });
+  }
+};
+
+module.exports = { getToken, handleVoice, sendOtp, verifyOtp, getCallStatus };

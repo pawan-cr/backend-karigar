@@ -57,10 +57,12 @@ const {
   approveReport,
   rejectReport,
   getReportById,
+  createReport,
 } = require("../api/reports/reportController");
 const {
   updateReviewStatus,
   getBusinessReviews,
+  getPendingReviews,
 } = require("../api/review/reviewController");
 const {
   getAdminDashboard,
@@ -186,6 +188,7 @@ router.post(
 router.post("/banners/update", verifyToken, checkUser, isAdmin, updateBanner);
 
 // Reports routes
+router.post("/reports/create", verifyToken, checkUser, createReport);
 router.post("/reports/list", verifyToken, checkUser, isAdmin, getAllReports);
 router.post(
   "/reports/status",
@@ -218,6 +221,13 @@ router.post(
   checkUser,
   isAdmin,
   updateReviewStatus,
+);
+router.post(
+  "/reviews/pending",
+  verifyToken,
+  checkUser,
+  isAdmin,
+  getPendingReviews,
 );
 // router.post("/reviews/business/list", getBusinessReviews);
 

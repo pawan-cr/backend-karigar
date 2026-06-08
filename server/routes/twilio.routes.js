@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getToken, handleVoice, sendOtp, verifyOtp } = require("../api/twilio/twilio.controller");
+const { getToken, handleVoice, sendOtp, verifyOtp, getCallStatus } = require("../api/twilio/twilio.controller");
 
 // POST /api/twilio/token
 // Generates a Twilio Access Token with VoiceGrant for the requesting client.
@@ -11,6 +11,10 @@ router.post("/token", getToken);
 // Twilio calls this endpoint when a client initiates an outgoing call.
 router.post("/voice", handleVoice);
 router.get("/voice", handleVoice);
+
+// POST /api/twilio/call-status
+// Checks status of a call sid
+router.post("/call-status", getCallStatus);
 
 // POST /api/twilio/send-otp
 // Sends a verification code via SMS using Twilio Verify Service.

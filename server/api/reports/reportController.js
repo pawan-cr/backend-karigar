@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Report = require("./reportModel");
 const Business = require("../business/businessModel");
-const { createUserNotification } = require("../../utils/notify");
+const { createUserNotification, notifyAdmins } = require("../../utils/notify");
 const { logAdminActivity } = require("../adminActivity/adminActivityController");
 
 const createReport = async (req, res) => {
@@ -30,6 +30,12 @@ const createReport = async (req, res) => {
       business_id: businessId,
       reason,
     });
+
+    await notifyAdmins(
+      "Business Reported",
+      `Business "${business.name}" has been reported for: "${reason}".`,
+      "business_report"
+    );
 
     return res.status(201).json({
       message: "Report Created",

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Business = require("../business/businessModel");
 const { Review, ReviewVote } = require("./reviewModel");
 const path = require("path");
-const { createUserNotification } = require("../../utils/notify");
+const { createUserNotification, notifyAdmins } = require("../../utils/notify");
 const { deleteFile } = require("../../middleware/upload");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -121,6 +121,12 @@ const addReview = async (req, res) => {
       "new_review",
     );
 
+    await notifyAdmins(
+      "Pending Review Submitted",
+      `A new review by ${req.dbUser.name || "Someone"} on "${business.name}" is pending moderation.`,
+      "pending_review"
+    );
+
     return res.status(201).json({
       message: "Review added successfully",
       review,
@@ -188,6 +194,13 @@ const editReview = async (req, res) => {
 
     await review.save();
     await refreshBusinessRating(review.business_id);
+
+    const business = await Business.findById(review.business_id);
+    await notifyAdmins(
+      "Pending Review Updated",
+      `An updated review on "${business?.name || "a business"}" is pending moderation.`,
+      "pending_review"
+    );
 
     return res.status(200).json({
       message: "Review updated successfully and is pending admin approval",
@@ -417,6 +430,22 @@ const updateReviewStatus = async (req, res) => {
   }
 };
 
+const getPendingReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ status: "pending" })
+      .populate("user_id", "name profile_image")
+      .populate("business_id", "name")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      reviews,
+    });
+  } catch (error) {
+    console.error("[getPendingReviews]", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   addReview,
   editReview,
@@ -426,4 +455,6 @@ module.exports = {
   replyToReview,
   voteReview,
   updateReviewStatus,
+  getPendingReviews,
 };
+

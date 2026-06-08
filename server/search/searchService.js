@@ -203,7 +203,7 @@ async function searchBusinesses(q, filters = {}, page, limit, options = {}) {
   const textQuery = buildTextQuery(q, ["name", "description", "city", "address"]);
   const includeBlocked = options.includeBlocked === true;
   const projection = makeProjection(
-    ["name", "slug", "city", "address", "phone", "rating", "logo", "verified_status", "createdAt"],
+    ["name", "slug", "city", "address", "phone", "rating", "logo", "verified_status", "createdAt", "category", "business_images"],
     textQuery,
   );
 
@@ -212,7 +212,7 @@ async function searchBusinesses(q, filters = {}, page, limit, options = {}) {
       const businessFilter = await buildBusinessFilter(filters, includeBlocked);
       const filter = mergeFilters(businessFilter, textQuery.filter);
       const result = await paginate(
-        Business.find(filter, projection).sort(textQuery.sort),
+        Business.find(filter, projection).populate("category", "name").sort(textQuery.sort),
         Business.countDocuments(filter),
         page,
         limit,
