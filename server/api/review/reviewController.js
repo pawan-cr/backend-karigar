@@ -176,6 +176,7 @@ const editReview = async (req, res) => {
 
     if (rating !== undefined) review.rating = rating;
     if (comment !== undefined) review.comment = comment;
+    review.status = "pending";
 
     // delete old and append new images
     if (newReviewImages.length) {
@@ -189,7 +190,7 @@ const editReview = async (req, res) => {
     await refreshBusinessRating(review.business_id);
 
     return res.status(200).json({
-      message: "Review updated successfully",
+      message: "Review updated successfully and is pending admin approval",
       review,
     });
   } catch (error) {
