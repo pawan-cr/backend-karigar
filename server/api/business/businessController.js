@@ -216,16 +216,16 @@ const registerBusiness = async (req, res) => {
         )
       : [];
 
-    const existingPhone = await Business.findOne({
-      phone,
-      owner_id: req.dbUser._id,
-    });
+    // const existingPhone = await Business.findOne({
+    //   phone,
+    //   owner_id: req.dbUser._id,
+    // });
 
-    if (existingPhone) {
-      return res
-        .status(409)
-        .json({ message: "Business with this phone already exists" });
-    }
+    // if (existingPhone) {
+    //   return res
+    //     .status(409)
+    //     .json({ message: "Business with this phone already exists" });
+    // }
 
     const uniqueSlug = await buildUniqueSlug(name, slug);
 

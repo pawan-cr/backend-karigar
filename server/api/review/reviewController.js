@@ -47,10 +47,10 @@ const addReview = async (req, res) => {
     // Handle uploaded review images
     const review_images = req.files
       ? req.files.map((file) =>
-          path
-            .join("uploads", "review-images", file.filename)
-            .replace(/\\/g, "/"),
-        )
+        path
+          .join("uploads", "review-images", file.filename)
+          .replace(/\\/g, "/"),
+      )
       : [];
 
     // Validate business ID
@@ -155,10 +155,10 @@ const editReview = async (req, res) => {
     // Handle uploaded new review images
     const newReviewImages = req.files
       ? req.files.map((file) =>
-          path
-            .join("uploads", "review-images", file.filename)
-            .replace(/\\/g, "/"),
-        )
+        path
+          .join("uploads", "review-images", file.filename)
+          .replace(/\\/g, "/"),
+      )
       : [];
 
     if (!reviewId || !isValidId(reviewId)) {
@@ -353,6 +353,55 @@ const replyToReview = async (req, res) => {
   }
 };
 
+// const voteReview = async (req, res) => {
+//   try {
+//     const { reviewId, type } = req.body;
+
+//     if (!isValidId(reviewId)) {
+//       return res.status(400).json({ message: "Invalid review id" });
+//     }
+//     if (!["helpful", "unhelpful"].includes(type)) {
+//       return res
+//         .status(400)
+//         .json({ message: "Vote type must be helpful or unhelpful" });
+//     }
+
+//     const existingVote = await ReviewVote.findOne({
+//       review_id: reviewId,
+//       user_id: req.dbUser._id,
+//     });
+
+//     if (existingVote && existingVote.type === type) {
+//       return res.status(409).json({ message: "Review already voted" });
+//     }
+
+//     if (existingVote) {
+//       await Review.findByIdAndUpdate(reviewId, {
+//         $inc: {
+//           [`${existingVote.type}_count`]: -1,
+//           [`${type}_count`]: 1,
+//         },
+//       });
+//       existingVote.type = type;
+//       await existingVote.save();
+//       return res.status(200).json({ message: "Review vote updated" });
+//     }
+
+//     await ReviewVote.create({
+//       review_id: reviewId,
+//       user_id: req.dbUser._id,
+//       type,
+//     });
+//     await Review.findByIdAndUpdate(reviewId, {
+//       $inc: { [`${type}_count`]: 1 },
+//     });
+
+//     return res.status(201).json({ message: "Review vote added" });
+//   } catch (error) {
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const voteReview = async (req, res) => {
   try {
     const { reviewId, type } = req.body;
@@ -371,10 +420,16 @@ const voteReview = async (req, res) => {
       user_id: req.dbUser._id,
     });
 
+    // remove vote
     if (existingVote && existingVote.type === type) {
-      return res.status(409).json({ message: "Review already voted" });
+      await ReviewVote.findByIdAndDelete(existingVote._id);
+      await Review.findByIdAndUpdate(reviewId, {
+        $inc: { [`${type}_count`]: -1 },
+      });
+      return res.status(200).json({ message: "Vote removed" });
     }
 
+    // Switched vote type 
     if (existingVote) {
       await Review.findByIdAndUpdate(reviewId, {
         $inc: {
@@ -387,6 +442,7 @@ const voteReview = async (req, res) => {
       return res.status(200).json({ message: "Review vote updated" });
     }
 
+    // No existing vote → create new
     await ReviewVote.create({
       review_id: reviewId,
       user_id: req.dbUser._id,
