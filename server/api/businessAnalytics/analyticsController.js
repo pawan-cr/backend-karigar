@@ -152,9 +152,9 @@ const getBusinessAnalytics = async (req, res) => {
       "name slug logo views call_click whatsapp_click website_click maps_click rating total_reviews verified_status is_active",
     );
 
-    if (!businesses.length) {
-      return res.status(404).json({ message: "No businesses found" });
-    }
+    // if (!businesses.length) {
+    //   return res.status(404).json({ message: "No businesses found" });
+    // }
 
     const businessIds = businesses.map((b) => b._id);
 

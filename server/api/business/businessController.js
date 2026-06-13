@@ -216,6 +216,30 @@ const registerBusiness = async (req, res) => {
         )
       : [];
 
+    let finalTiming = timing;
+    if (typeof timing === "string") {
+      try {
+        finalTiming = JSON.parse(timing);
+      } catch (e) {
+        console.error("Failed to parse timing:", e);
+      }
+    }
+
+    let finalCoordinates = coordinates;
+    if (typeof coordinates === "string") {
+      try {
+        finalCoordinates = JSON.parse(coordinates);
+      } catch (e) {
+        console.error("Failed to parse coordinates:", e);
+      }
+    }
+    if (!finalCoordinates && req.body.latitude && req.body.longitude) {
+      finalCoordinates = {
+        latitude: Number(req.body.latitude),
+        longitude: Number(req.body.longitude),
+      };
+    }
+
     // const existingPhone = await Business.findOne({
     //   phone,
     //   owner_id: req.dbUser._id,
@@ -245,8 +269,8 @@ const registerBusiness = async (req, res) => {
       state,
       country,
       pincode,
-      coordinates,
-      timing,
+      coordinates: finalCoordinates,
+      timing: finalTiming,
       services,
       logo,
       business_images,

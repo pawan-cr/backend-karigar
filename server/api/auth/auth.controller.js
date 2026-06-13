@@ -8,7 +8,7 @@ const {
 const { deleteFile } = require("../../middleware/upload");
 const { adminSearch } = require("../../search/searchController");
 
-const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner"];
+const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner", "manager"];
 const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin"];
 
 const registerUser = async (req, res) => {
@@ -26,7 +26,7 @@ const registerUser = async (req, res) => {
     }
 
     let assignedRole = "user";
-    if (role === "businessOwner" && ALLOWED_SIGNUP_ROLES.includes(role)) {
+    if (role && ALLOWED_SIGNUP_ROLES.includes(role)) {
       assignedRole = role;
     }
 

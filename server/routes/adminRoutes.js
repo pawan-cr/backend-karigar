@@ -87,14 +87,14 @@ router.post(
   "/business/suspend",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   suspendBusiness,
 );
 router.post(
   "/business/list",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   getAdminBusinesses,
 );
 // router.post("/details", optionalCheckUser, getBusinessDetails);
@@ -138,7 +138,7 @@ router.post(
   "/categories/create",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   upload.single("category_image"),
   createCategory,
 );
@@ -146,7 +146,7 @@ router.post(
   "/categories/update",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   upload.single("category_image"),
   updateCategory,
 );
@@ -154,7 +154,7 @@ router.post(
   "/categories/sub-categories/create",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   upload.single("subcategory_image"),
   createSubCategory,
 );
@@ -162,7 +162,7 @@ router.post(
   "/categories/sub-categories/update",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   upload.single("subcategory_image"),
   updateSubCategory,
 );
@@ -189,19 +189,19 @@ router.post("/banners/update", verifyToken, checkUser, isAdmin, updateBanner);
 
 // Reports routes
 router.post("/reports/create", verifyToken, checkUser, createReport);
-router.post("/reports/list", verifyToken, checkUser, isAdmin, getAllReports);
+router.post("/reports/list", verifyToken, checkUser, isVerifier, getAllReports);
 router.post(
   "/reports/status",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   updateReportStatus,
 );
 router.post(
   "/reports/business/list",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   getBusinessReports,
 );
 // router.post("/reports/approve", verifyToken, checkUser, isAdmin, approveReport);
@@ -219,14 +219,14 @@ router.post(
   "/reviews/status",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   updateReviewStatus,
 );
 router.post(
   "/reviews/pending",
   verifyToken,
   checkUser,
-  isAdmin,
+  isVerifier,
   getPendingReviews,
 );
 // router.post("/reviews/business/list", getBusinessReviews);
