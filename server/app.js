@@ -28,6 +28,8 @@ app.use(
   cors({
     origin: [
       "https://finalist-anaconda-majestic.ngrok-free.dev",
+      "https://karigr.com",
+      "https://www.karigr.com",
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:3002",
