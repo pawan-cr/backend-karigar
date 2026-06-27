@@ -15,6 +15,7 @@ const {
 } = require("../../utils/businessFilters");
 const { deleteFile } = require("../../middleware/upload");
 const { notifyAdmins } = require("../../utils/notify");
+const { capitalize } = require("../../utils/stringHelper");
 
 const createSlug = (value) =>
   value
@@ -180,7 +181,7 @@ const applyPostListFilters = (businesses, options) => {
 
 const registerBusiness = async (req, res) => {
   try {
-    const {
+    let {
       name,
       slug,
       category,
@@ -199,6 +200,9 @@ const registerBusiness = async (req, res) => {
       timing,
       services,
     } = req.body;
+
+    if (city) city = capitalize(city);
+    if (state) state = capitalize(state);
 
     // Handle logo (single file)
     const logo = req.files?.logo?.[0]
@@ -483,7 +487,11 @@ const updateBusiness = async (req, res) => {
     // Update normal fields
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
-        business[field] = req.body[field];
+        let val = req.body[field];
+        if ((field === "city" || field === "state") && typeof val === "string") {
+          val = capitalize(val);
+        }
+        business[field] = val;
       }
     });
 

@@ -6,6 +6,7 @@ const {
 } = require("../adminActivity/adminActivityController");
 const path = require("node:path");
 const { deleteFile } = require("../../middleware/upload");
+const { capitalize } = require("../../utils/stringHelper");
 
 const getCategories = async (req, res) => {
   try {
@@ -20,7 +21,8 @@ const getCategories = async (req, res) => {
 
 const createCategory = async (req, res) => {
   try {
-    const { name, icon, status } = req.body;
+    let { name, icon, status } = req.body;
+    if (name) name = capitalize(name);
     if (!name) {
       return res.status(400).json({ message: "Category name is required" });
     }
@@ -62,7 +64,8 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: "Invalid category id" });
     }
 
-    const { name, icon, status } = req.body;
+    let { name, icon, status } = req.body;
+    if (name) name = capitalize(name);
 
     const existing = await Category.findById(categoryId);
     if (!existing) {
@@ -108,7 +111,8 @@ const updateCategory = async (req, res) => {
 
 const createSubCategory = async (req, res) => {
   try {
-    const { category_id, name, icon, status } = req.body;
+    let { category_id, name, icon, status } = req.body;
+    if (name) name = capitalize(name);
     let subcategory_image;
 
     if (req.file) {
@@ -176,7 +180,8 @@ const updateSubCategory = async (req, res) => {
       return res.status(400).json({ message: "Invalid sub category id" });
     }
 
-    const { name, icon, status } = req.body;
+    let { name, icon, status } = req.body;
+    if (name) name = capitalize(name);
 
     // old image path
     const existing = await SubCategory.findById(subCategoryId);

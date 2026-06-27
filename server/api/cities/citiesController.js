@@ -1,10 +1,13 @@
 const City = require("./citiesModel");
 const { logAdminActivity } = require("../adminActivity/adminActivityController");
+const { capitalize } = require("../../utils/stringHelper");
 
 // API to create City
 const createCity = async (req, res) => {
   try {
-    const { name, state } = req.body;
+    let { name, state } = req.body;
+    name = capitalize(name);
+    state = capitalize(state);
     if (!name && !state) {
       return res.status(400).json({
         message: "All fields are required",
@@ -107,7 +110,9 @@ const getCityById = async (req, res) => {
 const updateCity = async (req, res) => {
   try {
     const id = req.body.cityId || req.body.id;
-    const { name, state, status } = req.body;
+    let { name, state, status } = req.body;
+    if (name) name = capitalize(name);
+    if (state) state = capitalize(state);
 
     if (!id) {
       return res.status(400).json({ message: "City ID is required" });
