@@ -9,7 +9,7 @@ const { deleteFile } = require("../../middleware/upload");
 const { adminSearch } = require("../../search/searchController");
 
 const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner", "manager"];
-const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin"];
+const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin", "both"];
 
 const registerUser = async (req, res) => {
   try {
@@ -19,8 +19,39 @@ const registerUser = async (req, res) => {
     // if user is already there
     const existingUser = await User.findOne({ firebase_uid: uid });
     if (existingUser) {
-      return res.status(409).json({
-        message: "Account already exits. Please login instead",
+      if (existingUser.is_blocked) {
+        return res.status(403).json({
+          message: "Your account has been blocked",
+          is_blocked: true,
+        });
+      }
+
+      if (role) {
+        if (
+          (existingUser.role === "user" && role === "businessOwner") ||
+          (existingUser.role === "businessOwner" && role === "user")
+        ) {
+          existingUser.role = "both";
+          await existingUser.save();
+        }
+      }
+
+      const payload = {
+        _id: existingUser._id.toString(),
+        userId: existingUser._id.toString(),
+        uid: existingUser.firebase_uid,
+        firebase_uid: existingUser.firebase_uid,
+        role: existingUser.role,
+      };
+
+      const signToken = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+      });
+
+      return res.status(200).json({
+        user: existingUser,
+        token: signToken,
+        message: "Login successful",
         isNew: false,
       });
     }

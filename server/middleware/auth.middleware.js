@@ -94,7 +94,7 @@ const isBusinessOwner = async (req, res, next) => {
   if (!req.dbUser) {
     return res.status(500).json({ message: "Internal server error" });
   }
-  if (!["businessOwner", "admin"].includes(req.dbUser.role)) {
+  if (!["businessOwner", "admin", "both"].includes(req.dbUser.role)) {
     return res.status(403).json({ message: "Business owner access required" });
   }
   next();

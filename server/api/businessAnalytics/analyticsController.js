@@ -5,6 +5,7 @@ const City = require("../cities/citiesModel");
 const { Review } = require("../review/reviewModel");
 const Analytics = require("./analyticsModel");
 const AdminActivity = require("../adminActivity/adminActivityModel");
+const { capitalize } = require("../../utils/stringHelper");
 
 const getAdminDashboard = async (req, res) => {
   try {
@@ -20,8 +21,8 @@ const getAdminDashboard = async (req, res) => {
       categoryDistribution,
       cityDistribution,
     ] = await Promise.all([
-      User.countDocuments({ role: "user" }),
-      User.countDocuments({ role: "businessOwner" }),
+      User.countDocuments({ role: { $in: ["user", "both"] } }),
+      User.countDocuments({ role: { $in: ["businessOwner", "both"] } }),
       User.countDocuments({ role: "manager" }),
       Business.countDocuments(),
       Business.countDocuments({ verified_status: "pending" }),
@@ -35,7 +36,7 @@ const getAdminDashboard = async (req, res) => {
       ]),
       Business.aggregate([
         { $match: { city: { $exists: true, $ne: "" } } },
-        { $group: { _id: "$city", count: { $sum: 1 } } },
+        { $group: { _id: { $toLower: "$city" }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 20 },
       ]),
@@ -46,14 +47,27 @@ const getAdminDashboard = async (req, res) => {
       categories.map((c) => [c._id.toString(), c.name]),
     );
 
-    const categorySeries = categoryDistribution.map((item) => ({
-      categoryId: item._id,
-      categoryName: categoryMap[item._id?.toString()] || "Unknown",
-      count: item.count,
-    }));
+    const categorySeriesMap = new Map();
+    for (const item of categoryDistribution) {
+      const originalName = categoryMap[item._id?.toString()] || "Unknown";
+      const normalizedName = capitalize(originalName);
+
+      if (categorySeriesMap.has(normalizedName)) {
+        const existing = categorySeriesMap.get(normalizedName);
+        existing.count += item.count;
+      } else {
+        categorySeriesMap.set(normalizedName, {
+          categoryId: item._id,
+          categoryName: normalizedName,
+          count: item.count,
+        });
+      }
+    }
+    const categorySeries = Array.from(categorySeriesMap.values())
+      .sort((a, b) => b.count - a.count);
 
     const citySeries = cityDistribution.map((item) => ({
-      city: item._id,
+      city: capitalize(item._id),
       count: item.count,
     }));
 

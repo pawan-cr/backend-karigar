@@ -102,12 +102,10 @@ async function validateOtpAuthType(req, res, phone, options = {}) {
   }
 
   if (authType === "register" && existingUser) {
-    res.status(409).json({
-      message:
-        options.registerExistsMessage ||
-        "An account with this phone number already exists. Please login instead.",
-    });
-    return false;
+    if (existingUser.is_blocked) {
+      res.status(403).json({ message: "Your account has been blocked." });
+      return false;
+    }
   }
 
   return true;
@@ -394,6 +392,15 @@ const verifyOtp = async (req, res) => {
           message: "Your account has been blocked",
           is_blocked: true,
         });
+      }
+      if (role) {
+        if (
+          (user.role === "user" && role === "businessOwner") ||
+          (user.role === "businessOwner" && role === "user")
+        ) {
+          user.role = "both";
+          await user.save();
+        }
       }
     }
 
