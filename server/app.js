@@ -34,6 +34,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/api/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // app.use("/api/auth", authRoutes);
 // app.use("/api/users", userRoutes);
