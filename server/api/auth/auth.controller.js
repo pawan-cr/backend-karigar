@@ -9,7 +9,13 @@ const { deleteFile } = require("../../middleware/upload");
 const { adminSearch } = require("../../search/searchController");
 
 const ALLOWED_SIGNUP_ROLES = ["user", "businessOwner", "manager"];
-const ADMIN_ASSIGNABLE_ROLES = ["user", "businessOwner", "manager", "admin", "both"];
+const ADMIN_ASSIGNABLE_ROLES = [
+  "user",
+  "businessOwner",
+  "manager",
+  "admin",
+  "both",
+];
 
 const registerUser = async (req, res) => {
   try {
@@ -17,7 +23,15 @@ const registerUser = async (req, res) => {
     const { role, phone, name } = req.body;
 
     // if user is already there
-    const existingUser = await User.findOne({ firebase_uid: uid });
+    let existingUser = await User.findOne({ firebase_uid: uid });
+    if (!existingUser && email) {
+      existingUser = await User.findOne({ email });
+      if (existingUser) {
+        existingUser.firebase_uid = uid;
+        await existingUser.save();
+      }
+    }
+
     if (existingUser) {
       if (existingUser.is_blocked) {
         return res.status(403).json({
@@ -111,8 +125,7 @@ const registerUser = async (req, res) => {
       }
 
       return res.status(500).json({
-        message:
-          "Registration failed. Try again.",
+        message: "Registration failed. Try again.",
       });
     }
 
@@ -141,9 +154,18 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { uid } = req.user;
+    const { uid, email } = req.user;
+    const { role } = req.body;
 
     let user = await User.findOne({ firebase_uid: uid });
+
+    if (!user && email) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.firebase_uid = uid;
+        await user.save();
+      }
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -153,14 +175,20 @@ const loginUser = async (req, res) => {
     }
 
     if (user.is_blocked) {
-      // console.warn("[loginUser] Blocked user attempted login:", {
-      //   _id: user._id,
-      //   email: user.email,
-      // });
       return res.status(403).json({
         message: "Your account has been blocked",
         is_blocked: true,
       });
+    }
+
+    if (role) {
+      if (
+        (user.role === "user" && role === "businessOwner") ||
+        (user.role === "businessOwner" && role === "user")
+      ) {
+        user.role = "both";
+        await user.save();
+      }
     }
 
     const payload = {
@@ -245,7 +273,9 @@ const updateProfile = async (req, res) => {
     console.error("[updateProfile]", error);
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
-      return res.status(400).json({ message: `An account with this ${field} already exists.` });
+      return res
+        .status(400)
+        .json({ message: `An account with this ${field} already exists.` });
     }
     return res.status(500).json({ message: "Internal server error" });
   }
