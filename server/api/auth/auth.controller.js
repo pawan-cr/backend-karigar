@@ -124,6 +124,14 @@ const registerUser = async (req, res) => {
         );
       }
 
+      if (dbError.code === 11000) {
+        const field = Object.keys(dbError.keyValue)[0];
+        const readableField = field === "phone" ? "phone number" : field;
+        return res.status(409).json({
+          message: `An account with this ${readableField} already exists.`,
+        });
+      }
+
       return res.status(500).json({
         message: "Registration failed. Try again.",
       });
