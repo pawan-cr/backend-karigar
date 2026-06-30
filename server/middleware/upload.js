@@ -17,6 +17,9 @@ const storage = multer.diskStorage({
     if (file.fieldname === "subcategory_image") {
       folderName = "subcategory-images";
     }
+    if (file.fieldname === "icon") {
+      folderName = "category-images";
+    }
     if (file.fieldname === "logo") {
       folderName = "logo-images";
     }

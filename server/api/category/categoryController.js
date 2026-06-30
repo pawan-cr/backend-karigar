@@ -29,9 +29,23 @@ const createCategory = async (req, res) => {
 
     let category_image;
 
-    if (req.file) {
+    const categoryImageFile =
+      req.file ||
+      (req.files &&
+        req.files["category_image"] &&
+        req.files["category_image"][0]);
+    const iconImageFile =
+      req.files && req.files["icon"] && req.files["icon"][0];
+
+    if (categoryImageFile) {
       category_image = path
-        .join("uploads", "category-images", req.file.filename)
+        .join("uploads", "category-images", categoryImageFile.filename)
+        .replace(/\\/g, "/");
+    }
+
+    if (iconImageFile) {
+      icon = path
+        .join("uploads", "category-images", iconImageFile.filename)
         .replace(/\\/g, "/");
     }
 
@@ -73,18 +87,35 @@ const updateCategory = async (req, res) => {
     }
 
     let category_image;
-    if (req.file) {
+
+    const categoryImageFile =
+      req.file ||
+      (req.files &&
+        req.files["category_image"] &&
+        req.files["category_image"][0]);
+    const iconImageFile =
+      req.files && req.files["icon"] && req.files["icon"][0];
+
+    if (categoryImageFile) {
       if (existing.category_image) deleteFile(existing.category_image);
       category_image = path
-        .join("uploads", "category-images", req.file.filename)
+        .join("uploads", "category-images", categoryImageFile.filename)
         .replace(/\\/g, "/");
     }
+
+    if (iconImageFile) {
+      if (existing.icon) deleteFile(existing.icon);
+      icon = path
+        .join("uploads", "category-images", iconImageFile.filename)
+        .replace(/\\/g, "/");
+    }
+
     const category = await Category.findByIdAndUpdate(
       categoryId,
       {
         ...(name && { name }),
         ...(category_image && { category_image }),
-        ...(icon && { icon }),
+        ...(icon !== undefined && { icon }),
         ...(status && { status }),
       },
       { new: true, runValidators: true },
@@ -115,11 +146,26 @@ const createSubCategory = async (req, res) => {
     if (name) name = capitalize(name);
     let subcategory_image;
 
-    if (req.file) {
+    const subcategoryImageFile =
+      req.file ||
+      (req.files &&
+        req.files["subcategory_image"] &&
+        req.files["subcategory_image"][0]);
+    const iconImageFile =
+      req.files && req.files["icon"] && req.files["icon"][0];
+
+    if (subcategoryImageFile) {
       subcategory_image = path
-        .join("uploads", "subcategory-images", req.file.filename)
+        .join("uploads", "subcategory-images", subcategoryImageFile.filename)
         .replace(/\\/g, "/");
     }
+
+    if (iconImageFile) {
+      icon = path
+        .join("uploads", "category-images", iconImageFile.filename)
+        .replace(/\\/g, "/");
+    }
+
     if (!category_id || !name) {
       return res
         .status(400)
@@ -191,18 +237,34 @@ const updateSubCategory = async (req, res) => {
 
     let subcategory_image;
 
-    if (req.file) {
+    const subcategoryImageFile =
+      req.file ||
+      (req.files &&
+        req.files["subcategory_image"] &&
+        req.files["subcategory_image"][0]);
+    const iconImageFile =
+      req.files && req.files["icon"] && req.files["icon"][0];
+
+    if (subcategoryImageFile) {
       if (existing.subcategory_image) deleteFile(existing.subcategory_image);
       subcategory_image = path
-        .join("uploads", "subcategory-images", req.file.filename)
+        .join("uploads", "subcategory-images", subcategoryImageFile.filename)
         .replace(/\\/g, "/");
     }
+
+    if (iconImageFile) {
+      if (existing.icon) deleteFile(existing.icon);
+      icon = path
+        .join("uploads", "category-images", iconImageFile.filename)
+        .replace(/\\/g, "/");
+    }
+
     const subCategory = await SubCategory.findByIdAndUpdate(
       subCategoryId,
       {
         ...(name && { name }),
         ...(subcategory_image && { subcategory_image }),
-        ...(icon && { icon }),
+        ...(icon !== undefined && { icon }),
         ...(status && { status }),
       },
       { new: true, runValidators: true },

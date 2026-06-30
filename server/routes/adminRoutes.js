@@ -139,7 +139,10 @@ router.post(
   verifyToken,
   checkUser,
   isVerifier,
-  upload.single("category_image"),
+  upload.fields([
+    { name: "category_image", maxCount: 1 },
+    { name: "icon", maxCount: 1 },
+  ]),
   createCategory,
 );
 router.post(
@@ -147,7 +150,10 @@ router.post(
   verifyToken,
   checkUser,
   isVerifier,
-  upload.single("category_image"),
+  upload.fields([
+    { name: "category_image", maxCount: 1 },
+    { name: "icon", maxCount: 1 },
+  ]),
   updateCategory,
 );
 router.post(
@@ -155,7 +161,10 @@ router.post(
   verifyToken,
   checkUser,
   isVerifier,
-  upload.single("subcategory_image"),
+  upload.fields([
+    { name: "subcategory_image", maxCount: 1 },
+    { name: "icon", maxCount: 1 },
+  ]),
   createSubCategory,
 );
 router.post(
@@ -163,7 +172,10 @@ router.post(
   verifyToken,
   checkUser,
   isVerifier,
-  upload.single("subcategory_image"),
+  upload.fields([
+    { name: "subcategory_image", maxCount: 1 },
+    { name: "icon", maxCount: 1 },
+  ]),
   updateSubCategory,
 );
 
